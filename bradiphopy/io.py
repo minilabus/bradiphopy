@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-""" 
+"""
 Functions to facilitate IO with surfaces and their additional data
 """
 
 import os
-import vtk.util.numpy_support
 import vtk
 
 
@@ -12,21 +11,21 @@ VTK_EXTENSIONS = [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
 
 
 def load_polydata(filename):
-    file_extension = os.path.splitext(filename)[-1].lower()
+    ext = os.path.splitext(filename)[-1].lower()
 
-    if file_extension == ".vtk":
+    if ext == ".vtk":
         reader = vtk.vtkPolyDataReader()
-    elif file_extension == ".vtp":
+    elif ext == ".vtp":
         reader = vtk.vtkPolyDataReader()
-    elif file_extension == ".fib":
+    elif ext == ".fib":
         reader = vtk.vtkPolyDataReader()
-    elif file_extension == ".ply":
+    elif ext == ".ply":
         reader = vtk.vtkPLYReader()
-    elif file_extension == ".stl":
+    elif ext == ".stl":
         reader = vtk.vtkSTLReader()
-    elif file_extension == ".xml":
+    elif ext == ".xml":
         reader = vtk.vtkXMLPolyDataReader()
-    elif file_extension == ".obj":
+    elif ext == ".obj":
         reader = vtk.vtkOBJReader()
         reader.SetFileName(filename)
         reader.Update()
@@ -39,22 +38,23 @@ def load_polydata(filename):
 
 
 def save_polydata(polydata, filename, binary=False):
-    file_extension = os.path.splitext(filename)[-1].lower()
+    ext = os.path.splitext(filename)[-1].lower()
 
-    if file_extension == ".vtk":
+    if ext == ".vtk":
         writer = vtk.vtkPolyDataWriter()
-    elif file_extension == ".vtp":
+    elif ext == ".vtp":
         writer = vtk.vtkPolyDataWriter()
-    elif file_extension == ".fib":
+    elif ext == ".fib":
         writer = vtk.vtkPolyDataWriter()
-    elif file_extension == ".ply":
+    elif ext == ".ply":
         writer = vtk.vtkPLYWriter()
-    elif file_extension == ".stl":
+        writer.SetArrayName("RGB")
+    elif ext == ".stl":
         writer = vtk.vtkSTLWriter()
-    elif file_extension == ".xml":
+    elif ext == ".xml":
         writer = vtk.vtkXMLPolyDataWriter()
-    elif file_extension == ".obj":
-    	writer = vtk.vtkOBJWriter()
+    elif ext == ".obj":
+        writer = vtk.vtkOBJWriter()
     else:
         raise IOError('{} is not supported by VTK.'.format(ext))
 
