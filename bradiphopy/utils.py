@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+"""
+"""
+
 import numpy as np
 import vtk
 import vtk.util.numpy_support as ns

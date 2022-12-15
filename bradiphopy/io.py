@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Functions to facilitate IO with surfaces and their additional data
+Functions to facilitate IO with surfaces and their additional data.
 """
 
 import os
