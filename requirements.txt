@@ -1,0 +1,6 @@
+numpy
+dipy
+fury
+scipy
+vtk
+matplotlib
