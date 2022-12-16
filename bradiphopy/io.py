@@ -37,7 +37,7 @@ def load_polydata(filename):
     return reader.GetOutput()
 
 
-def save_polydata(polydata, filename, binary=False):
+def save_polydata(polydata, filename, ascii=True):
     ext = os.path.splitext(filename)[-1].lower()
 
     if ext == ".vtk":
@@ -61,7 +61,7 @@ def save_polydata(polydata, filename, binary=False):
     writer.SetFileName(filename)
     writer.SetInputData(polydata)
 
-    if binary:
-        writer.SetFileTypeToBinary()
+    if ascii:
+        writer.SetFileTypeToASCII()
     writer.Update()
     writer.Write()

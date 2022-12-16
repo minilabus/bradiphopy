@@ -6,11 +6,7 @@ Match neighbors from one file to another.
 """
 
 import argparse
-import colorsys
 import os
-
-import matplotlib
-import numpy as np
 
 from bradiphopy.io import load_polydata, save_polydata
 from bradiphopy.bdp_ops import match_neighbors
@@ -21,14 +17,14 @@ def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('src_file',
-                   help='Source filename (must be supported by VTK.')
+                   help='Source (annot) filename (must be supported by VTK).')
     p.add_argument('tgt_file',
-                   help='Target filename (must be supported by VTK.')
+                   help='Target filename (must be supported by VTK).')
     p.add_argument('out_file',
-                   help='Output filename (must be supported by VTK.')
+                   help='Output filename (must be supported by VTK).')
     p.add_argument('--distance', type=float, default=1.0,
                    help='Maximum distance for transfer (mm) [%(default)s]')
-    p.add_argument('--ascii', action='store_false',
+    p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '
                         '(instead of binary).')
     p.add_argument('-f', dest='overwrite', action='store_true',
@@ -54,7 +50,7 @@ def main():
                                   distance=args.distance)
 
     save_polydata(out_bdp_obj.get_polydata(),
-                  args.out_file, binary=args.ascii)
+                  args.out_file, ascii=args.ascii)
 
 
 if __name__ == '__main__':

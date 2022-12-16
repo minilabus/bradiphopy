@@ -16,11 +16,11 @@ def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_file',
-                   help='Input filename (must be supported by VTK.')
+                   help='Input filename (must be supported by VTK).')
     p.add_argument('out_file',
-                   help='Output filename (must be supported by VTK.')
+                   help='Output filename (must be supported by VTK).')
 
-    p.add_argument('--ascii', action='store_false',
+    p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '
                         '(instead of binary).')
     p.add_argument('-f', dest='overwrite', action='store_true',
@@ -37,7 +37,7 @@ def main():
             '{} already exists, use -f to overwrite.'.format(args.out_file))
 
     polydata = load_polydata(args.in_file)
-    save_polydata(polydata, args.out_file, binary=args.ascii)
+    save_polydata(polydata, args.out_file, ascii=args.ascii)
 
 
 if __name__ == '__main__':

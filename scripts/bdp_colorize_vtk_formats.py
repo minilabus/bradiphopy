@@ -11,23 +11,22 @@ import colorsys
 import os
 
 import matplotlib
-import numpy as np
 
-from bradiphopy.io import load_polydata, save_polydata
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
+from bradiphopy.io import load_polydata, save_polydata
 
 
 def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_file',
-                   help='Input filename (must be supported by VTK.')
+                   help='Input filename (must be supported by VTK).')
     p.add_argument('out_file',
-                   help='Output filename (must be supported by VTK.')
-    p.add_argument('--colors', nargs=3, type=int, required=True,
-                   help='Input filename (must be supported by VTK.')
+                   help='Output filename (must be supported by VTK).')
+    p.add_argument('--color', nargs=3, type=int, required=True,
+                   help='Color as RGB (0-255).')
 
-    p.add_argument('--ascii', action='store_false',
+    p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '
                         '(instead of binary).')
     p.add_argument('-f', dest='overwrite', action='store_true',
@@ -48,11 +47,11 @@ def main():
     rgb_scalar = bdp_obj.get_scalar('RGB')
 
     hsv_scalar = matplotlib.colors.rgb_to_hsv(rgb_scalar)
-    hsv_scalar[:, 0] = colorsys.rgb_to_hsv(*args.colors)[0]
+    hsv_scalar[:, 0] = colorsys.rgb_to_hsv(*args.color)[0]
     rgb_scalar = matplotlib.colors.hsv_to_rgb(hsv_scalar)
 
-    bdp_obj.set_scalar(rgb_scalar, 'RGB', dtype=np.uint8)
-    save_polydata(polydata, args.out_file, binary=args.ascii)
+    bdp_obj.set_scalar(rgb_scalar, 'RGB', dtype='uint8')
+    save_polydata(bdp_obj.get_polydata(), args.out_file, ascii=args.ascii)
 
 
 if __name__ == '__main__':
