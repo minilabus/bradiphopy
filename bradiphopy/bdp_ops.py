@@ -55,7 +55,7 @@ def intersection(left, right):
     return {k: v for k, v in left.items() if k in right}
 
 
-def apply_intersection(bdp_list):
+def apply_intersection(bdp_list, return_indices=False):
     points_list = [bdp.get_polydata_vertices() for bdp in bdp_list]
     # Hash the points using the desired precision.
     indices = np.cumsum([0] + [len(p) for p in points_list[:-1]])
@@ -66,30 +66,33 @@ def apply_intersection(bdp_list):
     to_keep = reduce(intersection, hashes)
     indices = np.array(sorted(to_keep.values())).astype(np.uint32)
     bdp_out = bdp_list[0].subsample_polydata_vertices(indices)
-    return bdp_out
+
+    if return_indices:
+        return bdp_out, indices
+    else:
+        return bdp_out
 
 
-def apply_union(bdp_list):
+def apply_union(bdp_list, return_indices=False):
     append_filter = vtk.vtkAppendPolyData()
     for bdp_obj in bdp_list:
         append_filter.AddInputData(bdp_obj.get_polydata())
     append_filter.Update()
     bdp = BraDiPhoHelper3D(append_filter.GetOutput())
-    bdp_out = apply_intersection([bdp])
-    return bdp_out
+    bdp_out, indices = apply_intersection([bdp], return_indices=True)
+
+    if return_indices:
+        return bdp_out, indices
+    else:
+        return bdp_out
 
 
 def apply_difference(bdp_list):
-    points_list = [bdp.get_polydata_vertices() for bdp in bdp_list]
-    # Hash the points using the desired precision.
-    indices = np.cumsum([0] + [len(p) for p in points_list[:-1]])
-    hashes = [hash_points(s, i, precision=9) for
-              s, i in zip(points_list, indices)]
+    bdp_union = apply_union(bdp_list[1:])
+    bdp_out, indices = apply_intersection([bdp_list[0], bdp_union],
+                                          return_indices=True)
 
-    # Perform the operation on the hashes and get the output points.
-    to_keep = reduce(intersection, hashes)
-    indices = np.array(sorted(to_keep.values())).astype(np.uint32)
-    ori_indices = np.arange(len(points_list[0]))
+    ori_indices = np.arange(len(bdp_list[0]))
     indices = np.setdiff1d(ori_indices, indices)
     bdp_out = bdp_list[0].subsample_polydata_vertices(indices)
 

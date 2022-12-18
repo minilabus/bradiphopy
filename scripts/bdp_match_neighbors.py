@@ -3,6 +3,7 @@
 
 """
 Match neighbors from one file to another.
+Works better the closer the two files are in space.
 """
 
 import argparse

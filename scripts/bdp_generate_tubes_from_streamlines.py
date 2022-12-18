@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Script to generate tube from TRK files.
+Script to generate tubes from TRK files.
+Generate files around 500Mb for 10k-20k streamlines.
 """
 
 
