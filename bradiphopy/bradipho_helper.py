@@ -31,7 +31,8 @@ class BraDiPhoHelper3D():
     def generate_bdp_obj(vertices, triangles=[], arrays=None):
         polydata = vtk.vtkPolyData()
         if len(triangles):
-            vtk_triangles = np.hstack(np.c_[np.ones(len(triangles), dtype=int) * 3,
+            vtk_triangles = np.hstack(np.c_[np.ones(len(triangles),
+                                                    dtype=int) * 3,
                                             triangles])
         else:
             vtk_triangles = np.array([], dtype=int)
@@ -140,3 +141,16 @@ class BraDiPhoHelper3D():
 
     def get_polydata_vertices(self):
         return ns.vtk_to_numpy(self.polydata.GetPoints().GetData())
+
+    def set_polydata_vertices(self, vertices):
+        vtk_points = vtk.vtkPoints()
+        vtk_points.SetData(ns.numpy_to_vtk(vertices, deep=True))
+        self.get_polydata().SetPoints(vtk_points)
+
+    def set_polydata_triangles(self, triangles):
+        vtk_triangles = np.hstack(
+            np.c_[np.ones(len(triangles)).astype(np.int) * 3, triangles])
+        vtk_triangles = ns.numpy_to_vtkIdTypeArray(vtk_triangles, deep=True)
+        vtk_cells = vtk.vtkCellArray()
+        vtk_cells.SetCells(len(triangles), vtk_triangles)
+        self.get_polydata().SetPolys(vtk_cells)

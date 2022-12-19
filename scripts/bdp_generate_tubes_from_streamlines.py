@@ -18,7 +18,7 @@ import vtk
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
 from bradiphopy.io import save_polydata
 
-from bradiphopy.utils import lines_to_vtk_polydata
+from bradiphopy.fury import lines_to_vtk_polydata
 
 
 def _build_arg_parser():

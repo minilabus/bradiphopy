@@ -11,6 +11,9 @@ VTK_EXTENSIONS = [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
 
 
 def load_polydata(filename):
+    if not os.path.isfile(filename):
+        raise IOError('{} does not exist.'.format(filename))
+
     ext = os.path.splitext(filename)[-1].lower()
 
     if ext == ".vtk":
