@@ -8,17 +8,18 @@ Works better the closer the two files are in space.
 
 import argparse
 import os
+import numpy as np
 
 from bradiphopy.io import load_polydata, save_polydata
-from bradiphopy.bdp_ops import match_neighbors
+from bradiphopy.bdp_ops import transfer_annots
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
 
 
 def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument('src_file',
-                   help='Source (annot) filename (must be supported by VTK).')
+    p.add_argument('src_file', nargs='+',
+                   help='Source (annot) filenames (must be supported by VTK).')
     p.add_argument('tgt_file',
                    help='Target filename (must be supported by VTK).')
     p.add_argument('out_file',
@@ -41,17 +42,27 @@ def main():
         raise IOError(
             '{} already exists, use -f to overwrite.'.format(args.out_file))
 
-    src_polydata = load_polydata(args.src_file)
+    src_polydata = [load_polydata(filename) for filename in args.src_file]
     tgt_polydata = load_polydata(args.tgt_file)
 
-    src_bdp_obj = BraDiPhoHelper3D(src_polydata)
+    src_bdp_obj = [BraDiPhoHelper3D(polydata) for polydata in src_polydata]
     tgt_bdp_obj = BraDiPhoHelper3D(tgt_polydata)
 
-    out_bdp_obj = match_neighbors(src_bdp_obj, tgt_bdp_obj,
-                                  distance=args.distance)
+    _, new_annots = transfer_annots(src_bdp_obj, tgt_bdp_obj,
+                                  distance=args.distance, 
+                                  filenames=args.src_file)
+    np.savetxt(args.out_file, new_annots, fmt='%i')
+    # col_arr = tgt_bdp_obj.get_scalar('RGB').astype(np.float32)
+    # for i in range(len(new_annots)):
+    #     col_arr[i] = new_annots[i]*np.array([255, 0, 0])
+    #     print(col_arr[i], i)
 
-    save_polydata(out_bdp_obj.get_polydata(),
-                  args.out_file, ascii=args.ascii)
+    # col_arr = ((col_arr / np.max(col_arr)) * 255).astype(np.uint8)
+    # 
+    # print(col_arr.shape, len(tgt_bdp_obj))
+    # tgt_bdp_obj.set_scalar(col_arr, 'RGB')
+    # save_polydata(tgt_bdp_obj.get_polydata(),
+    #               'lol.ply', ascii=args.ascii)
 
 
 if __name__ == '__main__':

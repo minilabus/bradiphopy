@@ -4,12 +4,31 @@ Functions to facilitate operations with surfaces and their additional data.
 """
 
 from functools import reduce
+import os
 
 import numpy as np
 from scipy.spatial import cKDTree
 import vtk
 
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
+
+
+def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=1, filenames=None):
+    ckd_tree = cKDTree(tgt_bdp_obj.get_polydata_vertices())
+
+    indices = {}
+    for i, src in enumerate(src_bdp_obj):
+        curr_name = os.path.basename(
+            os.path.splitext(filenames[i])[0]) if filenames else i
+        _, indices[curr_name] = ckd_tree.query(src.get_polydata_vertices(),
+                                               k=1, distance_upper_bound=distance)
+    
+    new_annots = np.zeros((len(tgt_bdp_obj),), dtype=np.uint8)
+    for i, idx in enumerate(indices.values()):
+        new_annots[idx] = i+1
+
+    tgt_bdp_obj.set_scalar(new_annots, name='annotation')
+    return tgt_bdp_obj, new_annots
 
 
 def match_neighbors(src_bdp_obj, tgt_bdp_obj, distance=1):

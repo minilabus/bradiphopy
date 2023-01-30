@@ -119,7 +119,18 @@ class BraDiPhoHelper3D():
         if 'normal' in name.lower():
             self.polydata.GetPointData().SetNormals(vtk_array)
         else:
-            self.polydata.GetPointData().SetScalars(vtk_array)
+            try:
+                self.get_scalar(name)
+                self.polydata.GetPointData().SetScalars(vtk_array)
+            except ValueError:
+                self.polydata.GetPointData().AddArray(vtk_array)
+
+    def get_field_data(self, name):
+        return ns.vtk_to_numpy(self.polydata.GetFieldData().GetArray(name))
+
+    def set_field_data(self, array, name):
+        vtk_array = numpy_to_vtk_array(np.array(array), name=name)
+        self.polydata.GetFieldData().AddArray(vtk_array)
 
     def get_polydata_triangles(self):
         vtk_polys = ns.vtk_to_numpy(self.polydata.GetPolys().GetData())
