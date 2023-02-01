@@ -11,6 +11,7 @@ import argparse
 import os
 
 from fury import window, utils
+import imageio.v2 as imageio
 import numpy as np
 
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
@@ -23,8 +24,10 @@ def _build_arg_parser():
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_file', nargs='+',
                    help='Input filename.')
-    p.add_argument('--out_dir',
+    p.add_argument('out_filename',
                    help='Output filename.')
+    p.add_argument('--revolution_increment', type=int, default=1,
+                   help='Increment of revolution.')
 
     p.add_argument('-f', dest='overwrite', action='store_true',
                    help='Force overwriting of the output files.')
@@ -35,15 +38,10 @@ def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
 
-    if os.path.isdir(args.out_dir):
-        if not args.overwrite:
-            raise ValueError(
-                'Output directory already exists. Use -f to force overwrite.')
-        else:
-            shutil.rmtree(args.out_dir)
-            os.mkdir(args.out_dir)
-    else:
-        os.mkdir(args.out_dir)
+    tmp_dir = './.tmp_bdp'
+    if os.path.isdir(tmp_dir):
+        shutil.rmtree(tmp_dir)
+    os.mkdir(tmp_dir)
 
     polydata = load_polydata(args.in_file[0])
     bdp_obj = BraDiPhoHelper3D(polydata)
@@ -72,6 +70,7 @@ def main():
 
     count = 0
     to_switch = True
+    frames = []
     for i in range(len(circum_pts)):
         if to_switch:
             polydata = load_polydata(args.in_file[count])
@@ -87,11 +86,16 @@ def main():
         scene.set_camera(position=circum_pts[i],
                          focal_point=focal_point,
                          view_up=view_up)
+        curr_filename = 'f_{:03d}.png'.format(i)
         record(scene, size=(600, 600),
-               out_path=os.path.join(args.out_dir, 'f_{:03d}.png'.format(i)),
+               out_path=os.path.join(tmp_dir, curr_filename),
                position=circum_pts[i], focal_point=focal_point, view_up=view_up)
 
         scene.rm_all()
+        frames.append(imageio.imread(os.path.join(tmp_dir, curr_filename)))
+
+    imageio.mimwrite(args.out_filename, frames)
+    shutil.rmtree(tmp_dir)
 
 
 if __name__ == '__main__':

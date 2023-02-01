@@ -52,17 +52,6 @@ def main():
                                   distance=args.distance, 
                                   filenames=args.src_file)
     np.savetxt(args.out_file, new_annots, fmt='%i')
-    # col_arr = tgt_bdp_obj.get_scalar('RGB').astype(np.float32)
-    # for i in range(len(new_annots)):
-    #     col_arr[i] = new_annots[i]*np.array([255, 0, 0])
-    #     print(col_arr[i], i)
-
-    # col_arr = ((col_arr / np.max(col_arr)) * 255).astype(np.uint8)
-    # 
-    # print(col_arr.shape, len(tgt_bdp_obj))
-    # tgt_bdp_obj.set_scalar(col_arr, 'RGB')
-    # save_polydata(tgt_bdp_obj.get_polydata(),
-    #               'lol.ply', ascii=args.ascii)
 
 
 if __name__ == '__main__':

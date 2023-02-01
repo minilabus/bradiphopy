@@ -4,6 +4,9 @@
 """
 Script to generate tubes from TRK files.
 Generate files around 500Mb for 10k-20k streamlines.
+
+Only PLY file will have visible streamlines in CloudCompare.
+MI-Brain does not support coloring of surfaces (when loading).
 """
 
 
@@ -80,6 +83,10 @@ def main():
     if os.path.isfile(args.out_file) and not args.overwrite:
         raise IOError(
             '{} already exists, use -f to overwrite.'.format(args.out_file))
+    
+    _, ext = os.path.splitext(args.out_file)
+    if ext != '.ply':
+        raise ValueError('Output file must be a .ply file to support color.')
 
     aff = np.eye(3)
     aff[0, 0] = -1

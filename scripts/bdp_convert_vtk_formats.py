@@ -4,6 +4,9 @@
 """
 Convert PolyData from and to any of these extensions:
     [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
+
+Only PLY file will have visible streamlines in CloudCompare.
+MI-Brain does not support coloring of surfaces (when loading).
 """
 
 import argparse
@@ -37,6 +40,7 @@ def main():
             '{} already exists, use -f to overwrite.'.format(args.out_file))
 
     polydata = load_polydata(args.in_file)
+    print(polydata)
     save_polydata(polydata, args.out_file, ascii=args.ascii)
 
 
