@@ -24,6 +24,8 @@ def _build_arg_parser():
                    help='Target filename (must be supported by VTK).')
     p.add_argument('out_file',
                    help='Output filename (must be supported by VTK).')
+    p.add_argument('--annot_lut',
+                   help='LUT for consistency between Epoch/Subject')
     p.add_argument('--distance', type=float, default=1.0,
                    help='Maximum distance for transfer (mm) [%(default)s]')
     p.add_argument('--ascii', action='store_true',
@@ -49,8 +51,9 @@ def main():
     tgt_bdp_obj = BraDiPhoHelper3D(tgt_polydata)
 
     _, new_annots = transfer_annots(src_bdp_obj, tgt_bdp_obj,
-                                  distance=args.distance, 
-                                  filenames=args.src_file)
+                                    distance=args.distance,
+                                    filenames=args.src_file,
+                                    annot_lut=args.annot_lut)
     np.savetxt(args.out_file, new_annots, fmt='%i')
 
 

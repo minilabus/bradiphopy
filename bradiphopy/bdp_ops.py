@@ -4,6 +4,7 @@ Functions to facilitate operations with surfaces and their additional data.
 """
 
 from functools import reduce
+import json
 import os
 
 import numpy as np
@@ -13,19 +14,36 @@ import vtk
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
 
 
-def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=1, filenames=None):
+def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=1, filenames=None,
+                    annot_lut=None):
     ckd_tree = cKDTree(tgt_bdp_obj.get_polydata_vertices())
+
+    if annot_lut:
+        with open(annot_lut) as f:
+            annot_lut = json.load(f)
 
     indices = {}
     for i, src in enumerate(src_bdp_obj):
-        curr_name = os.path.basename(
+        curr_key = os.path.basename(
             os.path.splitext(filenames[i])[0]) if filenames else i
-        _, indices[curr_name] = ckd_tree.query(src.get_polydata_vertices(),
-                                               k=1, distance_upper_bound=distance)
-    
+
+        if annot_lut:
+            for key, value in annot_lut.items():
+                if key.lower() in curr_key.lower():
+                    curr_key = value
+                    print('Found key {} for {}'.format(key, filenames[i]))
+                    break
+
+        _, indices[curr_key] = ckd_tree.query(src.get_polydata_vertices(),
+                                              k=1, distance_upper_bound=distance)
+
     new_annots = np.zeros((len(tgt_bdp_obj),), dtype=np.uint8)
-    for i, idx in enumerate(indices.values()):
-        new_annots[idx] = i+1
+    for i, tuple_key_val in enumerate(indices.items()):
+        key, idx = tuple_key_val
+        if isinstance(key, int):
+            new_annots[idx] = key
+        else:
+            new_annots[idx] = i+1
 
     tgt_bdp_obj.set_scalar(new_annots, name='annotation')
     return tgt_bdp_obj, new_annots
