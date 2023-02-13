@@ -26,7 +26,7 @@ def _build_arg_parser():
                    help='Output filename (must be supported by VTK).')
     p.add_argument('--annot_lut',
                    help='LUT for consistency between Epoch/Subject')
-    p.add_argument('--distance', type=float, default=1.0,
+    p.add_argument('--distance', type=float, default=0.002,
                    help='Maximum distance for transfer (mm) [%(default)s]')
     p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '

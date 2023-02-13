@@ -15,39 +15,40 @@ import vtk
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
 
 
-def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=1, filenames=None,
-                    annot_lut=None):
-    ckd_tree = cKDTree(tgt_bdp_obj.get_polydata_vertices())
+def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=0.001,
+                    filenames=None, annot_lut=None):
 
     if annot_lut:
-        with open(annot_lut) as f:
+        with open(annot_lut, 'r') as f:
             annot_lut = json.load(f)
 
-    indices = {}
-    for i, src in enumerate(src_bdp_obj):
-        curr_key = os.path.basename(
-            os.path.splitext(filenames[i])[0]) if filenames else i
-
-        # Check if the key is in the LUT
-        if annot_lut:
-            for key, value in annot_lut.items():
-                if key.lower() in curr_key.lower():
-                    curr_key = value
-                    print('Found key {} for {}'.format(key, filenames[i]))
+    totals_size = np.cumsum([len(src) for src in src_bdp_obj])
+    totals_size = np.insert(totals_size, 0, 0)
+    merged_annots = np.zeros((totals_size[-1],), dtype=np.uint8)
+    for i in range(len(totals_size)-1):
+        if filenames and annot_lut:
+            curr_name = os.path.basename(os.path.splitext(filenames[i])[0])
+            for annot_key, annot_value in annot_lut.items():
+                if annot_key.lower() in curr_name.lower():
+                    val = annot_value
+                    print('Found key {} for {}'.format(
+                        annot_key, filenames[i]))
                     break
+            else:
+                val = 1+i
+        merged_annots[totals_size[i]:totals_size[i+1]] = val
 
-        # Get the surface closest point in the point cloud
-        _, indices[curr_key] = ckd_tree.query(src.get_polydata_vertices(),
-                                              k=1, distance_upper_bound=distance)
+    merged_vertices = np.vstack(
+        [src.get_polydata_vertices() for src in src_bdp_obj])
+    merged_ckd_tree = cKDTree(merged_vertices)
 
-    # Assign the indices to the new annotation (LUT or not)
+    # Get the surface closest point in the point cloud
     new_annots = np.zeros((len(tgt_bdp_obj),), dtype=np.uint8)
-    for i, tuple_key_val in enumerate(indices.items()):
-        key, idx = tuple_key_val
-        if isinstance(key, int):
-            new_annots[idx] = key
-        else:
-            new_annots[idx] = i+1
+    distances, indices = merged_ckd_tree.query(tgt_bdp_obj.get_polydata_vertices(),
+                                               k=1, distance_upper_bound=distance)
+    indices[distances == np.inf] = -1
+    for i, ind in enumerate(indices):
+        new_annots[i] = 0 if ind == -1 else merged_annots[ind]
 
     tgt_bdp_obj.set_scalar(new_annots, name='annotation')
     return tgt_bdp_obj, new_annots
