@@ -23,7 +23,7 @@ def _build_arg_parser():
                    help='Target filename (must be supported by VTK).')
     p.add_argument('out_file',
                    help='Output filename (must be supported by VTK).')
-    p.add_argument('--distance', type=float, default=1.0,
+    p.add_argument('--distance', type=float, default=0.002,
                    help='Maximum distance for transfer (mm) [%(default)s]')
     p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '
@@ -48,7 +48,7 @@ def main():
     tgt_bdp_obj = BraDiPhoHelper3D(tgt_polydata)
 
     out_bdp_obj = match_neighbors(src_bdp_obj, tgt_bdp_obj,
-                                  distance=args.distance)
+                                  max_dist=args.distance)
 
     save_polydata(out_bdp_obj.get_polydata(),
                   args.out_file, ascii=args.ascii)

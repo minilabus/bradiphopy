@@ -5,10 +5,11 @@ Functions to facilitate operations with surfaces and their additional data.
 
 from functools import reduce
 import json
+import logging
 import os
 
 import numpy as np
-from scipy.spatial import cKDTree
+from scipy.spatial import cKDTree, Delaunay, ConvexHull
 import vtk
 
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
@@ -27,6 +28,7 @@ def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=1, filenames=None,
         curr_key = os.path.basename(
             os.path.splitext(filenames[i])[0]) if filenames else i
 
+        # Check if the key is in the LUT
         if annot_lut:
             for key, value in annot_lut.items():
                 if key.lower() in curr_key.lower():
@@ -34,9 +36,11 @@ def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=1, filenames=None,
                     print('Found key {} for {}'.format(key, filenames[i]))
                     break
 
+        # Get the surface closest point in the point cloud
         _, indices[curr_key] = ckd_tree.query(src.get_polydata_vertices(),
                                               k=1, distance_upper_bound=distance)
 
+    # Assign the indices to the new annotation (LUT or not)
     new_annots = np.zeros((len(tgt_bdp_obj),), dtype=np.uint8)
     for i, tuple_key_val in enumerate(indices.items()):
         key, idx = tuple_key_val
@@ -49,12 +53,50 @@ def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=1, filenames=None,
     return tgt_bdp_obj, new_annots
 
 
-def match_neighbors(src_bdp_obj, tgt_bdp_obj, distance=1):
-    ckd_tree = cKDTree(tgt_bdp_obj.get_polydata_vertices())
-    _, indices = ckd_tree.query(src_bdp_obj.get_polydata_vertices(),
-                                k=10, distance_upper_bound=distance)
+def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1):
+    src_vectices = src_bdp_obj.get_polydata_vertices()
+    tgt_vertices = tgt_bdp_obj.get_polydata_vertices()
+    logging.warning(
+        'Number of vertices in source: {}'.format(len(src_vectices)))
+    logging.warning(
+        'Number of vertices in target: {}'.format(len(tgt_vertices)))
 
-    return tgt_bdp_obj.subsample_polydata_vertices(np.unique(indices))
+    src_bbox = np.array(src_bdp_obj.get_bound()).reshape(3, 2).T
+    logging.warning('Source bounding box X: {} / Y: {} / Z: {}'.format(
+        np.round(src_bbox[:, 0], 4),
+        np.round(src_bbox[:, 1], 4),
+        np.round(src_bbox[:, 2], 4)))
+    min_condition = np.min(tgt_vertices-src_bbox[0], axis=1) > 0
+    max_condition = np.any(tgt_vertices-src_bbox[1], axis=1) < 0
+    bbox_in_indices = np.where(np.logical_or(min_condition,
+                                             max_condition))[0]
+    # Select the vertices in the bbox
+    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(bbox_in_indices)
+    tgt_vertices = tgt_vertices[bbox_in_indices]
+    logging.warning('Number of vertices of target within source '
+                    'bbox: {}'.format(len(bbox_in_indices)))
+
+    convex_hull = src_vectices[ConvexHull(src_vectices).vertices]*1.1
+    convex_hull = Delaunay(convex_hull)
+    convex_hull_in_indices = [i for i in range(len(tgt_vertices))
+                              if convex_hull.find_simplex(tgt_vertices[i]) >= 0]
+    # Select the vertices in the convex hull
+    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(
+        convex_hull_in_indices)
+    tgt_vertices = tgt_vertices[convex_hull_in_indices]
+    logging.warning('Number of vertices of target within convex hull of '
+                    'source: {}'.format(len(convex_hull_in_indices)))
+
+    src_ckd_tree = cKDTree(src_vectices)
+    distances, _ = src_ckd_tree.query(tgt_vertices,
+                                      k=1, distance_upper_bound=max_dist)
+    # Select the vertices within the max distance
+    close_indices = np.argwhere(distances < max_dist).flatten()
+    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(close_indices)
+    logging.warning('Number of vertices of target within max distance of '
+                    'source: {}'.format(len(close_indices)))
+
+    return tgt_bdp_obj
 
 
 def hash_points(points, start_index=0, precision=None):

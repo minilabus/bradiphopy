@@ -165,3 +165,6 @@ class BraDiPhoHelper3D():
         vtk_cells = vtk.vtkCellArray()
         vtk_cells.SetCells(len(triangles), vtk_triangles)
         self.get_polydata().SetPolys(vtk_cells)
+
+    def get_bound(self):
+        return self.polydata.GetBounds()
