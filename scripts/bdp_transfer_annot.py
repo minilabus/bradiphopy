@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Match neighbors from one point_cloud to another.
-Works better the closer the two files are in space.
+Transfer annotation from PC to mesh using a LUT
 """
 
 import argparse
@@ -23,14 +22,11 @@ def _build_arg_parser():
     p.add_argument('tgt_file',
                    help='Target filename (must be supported by VTK).')
     p.add_argument('out_file',
-                   help='Output filename (must be supported by VTK).')
+                   help='Output filename as TXT.')
     p.add_argument('--annot_lut',
                    help='LUT for consistency between Epoch/Subject')
     p.add_argument('--distance', type=float, default=0.002,
                    help='Maximum distance for transfer (mm) [%(default)s]')
-    p.add_argument('--ascii', action='store_true',
-                   help='Save the file with data as ASCII '
-                        '(instead of binary).')
     p.add_argument('-f', dest='overwrite', action='store_true',
                    help='Force overwriting of the output files.')
     return p

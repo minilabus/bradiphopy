@@ -27,12 +27,16 @@ def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=0.001,
     merged_annots = np.zeros((totals_size[-1],), dtype=np.uint8)
     for i in range(len(totals_size)-1):
         if filenames and annot_lut:
-            curr_name = os.path.basename(os.path.splitext(filenames[i])[0])
+            curr_name = os.path.basename(
+                os.path.splitext(filenames[i])[0]).lower()
             for annot_key, annot_value in annot_lut.items():
-                if annot_key.lower() in curr_name.lower():
+                index_match = curr_name.find('_'+annot_key.lower())
+
+                if index_match >= 0 and \
+                        curr_name[index_match:] == '_'+annot_key.lower():
                     val = annot_value
-                    print('Found key {} for {}'.format(
-                        annot_key, filenames[i]))
+                    print('Found key {} for {}'.format(annot_key,
+                                                       filenames[i]))
                     break
             else:
                 val = 1+i

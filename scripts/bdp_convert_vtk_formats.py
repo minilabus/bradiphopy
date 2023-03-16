@@ -40,7 +40,6 @@ def main():
             '{} already exists, use -f to overwrite.'.format(args.out_file))
 
     polydata = load_polydata(args.in_file)
-    print(polydata)
     save_polydata(polydata, args.out_file, ascii=args.ascii)
 
 

@@ -167,3 +167,29 @@ def lines_to_vtk_polydata(lines, colors=None):
         polydata.GetPointData().SetScalars(vtk_colors)
 
     return polydata
+
+
+def get_polydata_lines(line_polydata):
+    """Convert vtk polydata to a list of lines ndarrays.
+    Parameters
+    ----------
+    line_polydata : vtkPolyData
+    Returns
+    -------
+    lines : list
+        List of N curves represented as 2D ndarrays
+    """
+    lines_vertices = ns.vtk_to_numpy(line_polydata.GetPoints().GetData())
+    lines_idx = ns.vtk_to_numpy(line_polydata.GetLines().GetData())
+
+    lines = []
+    current_idx = 0
+    while current_idx < len(lines_idx):
+        line_len = lines_idx[current_idx]
+
+        next_idx = current_idx + line_len + 1
+        line_range = lines_idx[current_idx + 1: next_idx]
+
+        lines += [lines_vertices[line_range]]
+        current_idx = next_idx
+    return lines
