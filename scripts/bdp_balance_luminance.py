@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 """
-Colorize PolyData from and to any of these extensions:
-    [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
 """
 
 import argparse

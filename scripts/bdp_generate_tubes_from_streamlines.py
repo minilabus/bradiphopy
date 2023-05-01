@@ -2,8 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
-Script to generate tubes from TRK files.
+Script to generate tubes from tractography files.
 Generate files around 500Mb for 10k-20k streamlines.
+
+If generating for MI-Brain use TRK (that align with NIFTI) as input and PLY as
+output. If generating for CloudCompare use VTK (from bdp_scale_file.py) as
+input and PLY output.
 
 Only PLY file will have visible streamlines in CloudCompare.
 MI-Brain does not support coloring of surfaces (when loading).
@@ -38,6 +42,13 @@ def _build_arg_parser():
     p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '
                         '(instead of binary).')
+
+    p.add_argument('--tol_error', type=float, default=0.0001,
+                   help='Tolerance error for the compression of the streamlines.'
+                        'Around 0.1mm (divide by 1000 if in photogrammetry space)')
+    p.add_argument('--reference', default='same',
+                   help='Reference image for the output file.')
+
     p.add_argument('-f', dest='overwrite', action='store_true',
                    help='Force overwriting of the output files.')
     return p
@@ -83,7 +94,7 @@ def main():
     if os.path.isfile(args.out_file) and not args.overwrite:
         raise IOError(
             '{} already exists, use -f to overwrite.'.format(args.out_file))
-    
+
     _, ext = os.path.splitext(args.out_file)
     if ext != '.ply':
         raise ValueError('Output file must be a .ply file to support color.')
@@ -92,7 +103,8 @@ def main():
     aff[0, 0] = -1
     aff[1, 1] = -1
 
-    sft = compress_sft(load_tractogram(args.in_bundle, 'same'))
+    sft = compress_sft(load_tractogram(args.in_bundle, args.reference),
+                       tol_error=args.tol_error)
     sft.streamlines._data = np.dot(sft.streamlines._data, aff)
     polydata = create_tubes(sft.streamlines, args.radius)
     obj_w_strip = BraDiPhoHelper3D(polydata)

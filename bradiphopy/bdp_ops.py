@@ -72,16 +72,17 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1):
         np.round(src_bbox[:, 1], 4),
         np.round(src_bbox[:, 2], 4)))
     min_condition = np.min(tgt_vertices-src_bbox[0], axis=1) > 0
-    max_condition = np.any(tgt_vertices-src_bbox[1], axis=1) < 0
-    bbox_in_indices = np.where(np.logical_or(min_condition,
-                                             max_condition))[0]
+    max_condition = np.max(tgt_vertices-src_bbox[1], axis=1) < 0
+    bbox_in_indices = np.where(np.logical_and(min_condition,
+                                              max_condition))[0]
+
     # Select the vertices in the bbox
     tgt_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(bbox_in_indices)
     tgt_vertices = tgt_vertices[bbox_in_indices]
     logging.warning('Number of vertices of target within source '
                     'bbox: {}'.format(len(bbox_in_indices)))
 
-    convex_hull = src_vectices[ConvexHull(src_vectices).vertices]*1.1
+    convex_hull = src_vectices[ConvexHull(src_vectices*1.1).vertices]
     convex_hull = Delaunay(convex_hull)
     convex_hull_in_indices = [i for i in range(len(tgt_vertices))
                               if convex_hull.find_simplex(tgt_vertices[i]) >= 0]

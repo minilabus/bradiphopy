@@ -2,11 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-Convert PolyData from and to any of these extensions:
-    [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
+Scaling of TRK file or VTK file containing streamlines. If starting in RASMM
+aligned with a NIFTI to photogrammetry space, use TRK as input and VTK as
+output and use the default --scaling (0.001).
 
-Only PLY file will have visible streamlines in CloudCompare.
-MI-Brain does not support coloring of surfaces (when loading).
+These VTK can be used to visualize in CloudCompare as point clouds (not line)
+to check for alignement with photogrammetry.
+
+If you want streamlines, use bdp_generate_tubes_from_streamlines.py with this
+scripts outputs (as VTK) as input to generate tubes. Only then you can use
+CloudCompare to visualize streamlines.
 """
 
 import argparse
@@ -27,9 +32,9 @@ def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_file',
-                   help='Input filename (must be supported by VTK).')
+                   help='Input filename (supports .trk and all VTK).')
     p.add_argument('out_file',
-                   help='Output filename (must be supported by VTK).')
+                   help='Output filename (supports .trk and all VTK).')
 
     p.add_argument('--scaling', type=float, default=0.001,
                    help='Scaling factor to apply to the streamlines [%(default)s].')
@@ -58,9 +63,9 @@ def main():
                               bbox_valid_check=False)
         sft.streamlines._data = sft.streamlines._data
         polydata = lines_to_vtk_polydata(sft.streamlines)
-        # save_tractogram(sft, 'tmp.vtk',
-        #                 bbox_valid_check=False)
-        # args.in_file = 'tmp.vtk'
+        save_tractogram(sft, 'tmp.vtk',
+                        bbox_valid_check=False)
+        args.in_file = 'tmp.vtk'
     else:
         polydata = load_polydata(args.in_file)
     transform = vtk.vtkTransform()
