@@ -82,7 +82,14 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1):
     logging.warning('Number of vertices of target within source '
                     'bbox: {}'.format(len(bbox_in_indices)))
 
-    convex_hull = src_vectices[ConvexHull(src_vectices).vertices]
+    barycenter = np.mean(src_vectices, axis=0)
+    tmp_convex_hull = src_vectices[ConvexHull(src_vectices).vertices]
+    barycenter = np.mean(tmp_convex_hull, axis=0)
+    big_convex_hull = tmp_convex_hull + (barycenter - tmp_convex_hull) * 0.1
+    small_convex_hull = tmp_convex_hull - (barycenter - tmp_convex_hull) * 0.1
+    new_convex_hull = np.vstack([big_convex_hull, small_convex_hull])
+
+    convex_hull = new_convex_hull[ConvexHull(new_convex_hull).vertices]
     convex_hull = Delaunay(convex_hull)
     convex_hull_in_indices = [i for i in range(len(tgt_vertices))
                               if convex_hull.find_simplex(tgt_vertices[i]) >= 0]
