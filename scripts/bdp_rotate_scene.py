@@ -22,10 +22,10 @@ from bradiphopy.fury import record
 def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument('in_file', nargs='+',
-                   help='Input filename.')
+    p.add_argument('in_files', nargs='+',
+                   help='Input filename (supported by VTK).')
     p.add_argument('out_filename',
-                   help='Output filename.')
+                   help='Output filename (.gif or .mp4).')
     p.add_argument('--revolution_increment', type=int, default=1,
                    help='Increment of revolution.')
 

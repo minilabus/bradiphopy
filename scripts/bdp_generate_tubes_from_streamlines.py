@@ -32,11 +32,11 @@ def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_bundle',
-                   help='Requires the filename and radius (mm) as a pair.')
+                   help='Requires the filename (.trk or .tck).')
     p.add_argument('radius', type=float,
-                   help='Radius of the tubes.')
-    p.add_argument('out_file',
-                   help='Output bundle filename.')
+                   help='Radius of the tubes (mm).')
+    p.add_argument('out_filename',
+                   help='Output bundle filename (.ply).')
     p.add_argument('--color', nargs=3, type=int, default=(255, 255, 255),
                    help='Color as RGB (0-255).')
     p.add_argument('--ascii', action='store_true',
