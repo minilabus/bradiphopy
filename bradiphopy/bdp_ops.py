@@ -58,9 +58,11 @@ def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=0.001,
     return tgt_bdp_obj, new_annots
 
 
-def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1):
+def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
+                    return_indices=False, return_distances=False):
     src_vectices = src_bdp_obj.get_polydata_vertices()
     tgt_vertices = tgt_bdp_obj.get_polydata_vertices()
+    initial_size = len(tgt_vertices)
     logging.warning(
         'Number of vertices in source: {}'.format(len(src_vectices)))
     logging.warning(
@@ -71,8 +73,9 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1):
         np.round(src_bbox[:, 0], 4),
         np.round(src_bbox[:, 1], 4),
         np.round(src_bbox[:, 2], 4)))
-    min_condition = np.min(tgt_vertices-src_bbox[0], axis=1) > 0
-    max_condition = np.max(tgt_vertices-src_bbox[1], axis=1) < 0
+
+    min_condition = np.min(tgt_vertices-src_bbox[0]*1.1, axis=1) > 0
+    max_condition = np.max(tgt_vertices-src_bbox[1]*1.1, axis=1) < 0
     bbox_in_indices = np.where(np.logical_and(min_condition,
                                               max_condition))[0]
 
@@ -106,10 +109,20 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1):
     # Select the vertices within the max distance
     close_indices = np.argwhere(distances < max_dist).flatten()
     tgt_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(close_indices)
+    real_indices = bbox_in_indices[convex_hull_in_indices][close_indices]
     logging.warning('Number of vertices of target within max distance of '
                     'source: {}'.format(len(close_indices)))
 
-    return tgt_bdp_obj
+    return_data = [tgt_bdp_obj]
+
+    if return_indices:
+        return_data.append(real_indices)
+    if return_distances:
+        real_distances = np.ones((initial_size)) * np.inf
+        real_distances[real_indices] = distances[close_indices]
+        return_data.append(distances[close_indices])
+
+    return return_data
 
 
 def hash_points(points, start_index=0, precision=None):
