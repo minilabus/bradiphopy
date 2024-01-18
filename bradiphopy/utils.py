@@ -6,7 +6,7 @@
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import numpy as np
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, binary_dilation
 import vtk
 import vtk.util.numpy_support as ns
 
@@ -59,7 +59,7 @@ def get_colormap(name):
     return plt.cm.get_cmap(name)
 
 
-def create_mesh_from_image(img, threshold=0.9, spacing=(1.0, 1.0, 1.0)):
+def create_mesh_from_image(img, dilate=0, threshold=0.5):
     """
     Generate a mesh using the marching cubes algorithm from an image.
 
@@ -80,7 +80,10 @@ def create_mesh_from_image(img, threshold=0.9, spacing=(1.0, 1.0, 1.0)):
     percentiles = np.percentile(data[data > 0], [1, 99])
     data[data < percentiles[0]] = 0
     data[data > percentiles[1]] = 0
-    data = gaussian_filter(data, sigma=0.5)
+    data[data > 0] = 1
+    if dilate > 0:
+        data = binary_dilation(data, iterations=dilate)
+    data = gaussian_filter(data, sigma=0.1)
 
     # Convert numpy array to VTK image data
     vtk_data = vtk.util.numpy_support.numpy_to_vtk(num_array=data.ravel(),
@@ -109,16 +112,16 @@ def create_mesh_from_image(img, threshold=0.9, spacing=(1.0, 1.0, 1.0)):
     marching_cubes.Update()
 
     # Apply a smoothing filter
-    smoother = vtk.vtkWindowedSincPolyDataFilter()
-    smoother.SetInputData(marching_cubes.GetOutput())
-    smoother.SetNumberOfIterations(2)
-    smoother.SetPassBand(0.1)
-    smoother.NonManifoldSmoothingOn()
-    smoother.NormalizeCoordinatesOn()
-    smoother.Update()
+    # smoother = vtk.vtkWindowedSincPolyDataFilter()
+    # smoother.SetInputData(marching_cubes.GetOutput())
+    # smoother.SetNumberOfIterations(2)
+    # smoother.SetPassBand(0.1)
+    # smoother.NonManifoldSmoothingOn()
+    # smoother.NormalizeCoordinatesOn()
+    # smoother.Update()
 
     # Return the transformed vtkPolyData
-    return smoother.GetOutput()
+    return marching_cubes.GetOutput()
 
 
 def sample_mesh_to_point_cloud(mesh, sampling_distance):
@@ -140,6 +143,7 @@ def sample_mesh_to_point_cloud(mesh, sampling_distance):
 
     # Extract points from the filter
     sampled_points_vtk = surface_filter.GetOutput().GetPoints()
-    sampled_points = vtk.util.numpy_support.vtk_to_numpy(sampled_points_vtk.GetData())
-    print(len(sampled_points))
+    sampled_points = vtk.util.numpy_support.vtk_to_numpy(
+        sampled_points_vtk.GetData())
+
     return sampled_points

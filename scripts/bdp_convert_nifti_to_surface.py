@@ -20,6 +20,7 @@ from bradiphopy.utils import create_mesh_from_image, sample_mesh_to_point_cloud
 import nibabel as nib
 from nibabel.affines import apply_affine
 
+
 def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -35,9 +36,10 @@ def _build_arg_parser():
     p.add_argument('--save_point_cloud', action='store_true',
                    help='Save a point cloud instead of a mesh.')
     p.add_argument('--sampling_distance', type=int, default=0.0001,
-                     help='Distance between point for sampling the mesh '
-                          '[%(default)s].')
-
+                   help='Distance between point for sampling the mesh '
+                   '[%(default)s].')
+    p.add_argument('--dilate', type=int, default=0,
+                   help='Number of dilation iterations [%(default)s].')
 
     p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '
@@ -46,25 +48,15 @@ def _build_arg_parser():
                    help='Force overwriting of the output files.')
     return p
 
+
 def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
 
     img = nib.load(args.in_file)
-    affine = img.affine
-    data = img.get_fdata()
-    
-    # Extract and transpose indices
-    non_zero_indices = np.where(data > 0)
-
-    # Compute RAS coordinates for each set of indices
-    mesh_poly = create_mesh_from_image(img)
-    apply_affine(affine, np.transpose(non_zero_indices))
+    mesh_poly = create_mesh_from_image(img, dilate=args.dilate)
 
     obj_point_cloud = BraDiPhoHelper3D(mesh_poly)
-    # vertices = apply_affine(affine,
-    #                         obj_point_cloud.get_polydata_vertices())
-    # obj_point_cloud.set_polydata_vertices(vertices)
 
     polydata = obj_point_cloud.get_polydata()
     transform = vtk.vtkTransform()
@@ -83,11 +75,11 @@ def main():
 
     if args.save_point_cloud:
         vertices = sample_mesh_to_point_cloud(transformFilter.GetOutput(),
-                                          args.sampling_distance)
+                                              args.sampling_distance)
         obj_point_cloud = BraDiPhoHelper3D.generate_bdp_obj(vertices)
         save_polydata(obj_point_cloud.get_polydata(), args.out_file,
                       ascii=args.ascii)
-        
+
     else:
         save_polydata(transformFilter.GetOutput(), args.out_file,
                       ascii=args.ascii)

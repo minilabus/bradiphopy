@@ -7,8 +7,10 @@ from functools import reduce
 import json
 import logging
 import os
+import random
 
 import numpy as np
+from scipy.linalg import orthogonal_procrustes
 from scipy.spatial import cKDTree, Delaunay, ConvexHull
 import vtk
 
@@ -58,10 +60,66 @@ def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=0.001,
     return tgt_bdp_obj, new_annots
 
 
+def run_icp(A, B, max_distance, iteration=10):
+    """
+    Run the Iterative Closest Point (ICP) algorithm.
+
+    Parameters:
+    A (numpy.ndarray): Source point cloud (Nx3).
+    B (numpy.ndarray): Target point cloud (Mx3).
+    max_distance (float): Maximum distance for closest point matching.
+
+    Returns:
+    tuple: Tuple containing:
+        - numpy.ndarray: The final transformation matrix (4x4).
+        - numpy.ndarray: The transformed source point cloud.
+    """
+    original_A = A.copy()
+    if len(A) > 10000:
+        A = A[np.random.choice(A.shape[0], 10000, replace=False), :]
+    if len(B) > 10000:
+        B = B[np.random.choice(B.shape[0], 10000, replace=False), :]
+    assert A.shape[1] == 3 and B.shape[
+        1] == 3, "Point clouds must have shape (N,3) or (M,3)"
+
+    # Initial guess for the transformation
+    R = np.eye(3)
+    t = np.zeros(3)
+
+    for i in range(iteration):  # Iteration limit
+        # Apply current transformation
+        A_transformed = np.dot(A, R.T) + t
+
+        # Build a KD-Tree for efficient nearest neighbor search
+        tree = cKDTree(B)
+        distances, indices = tree.query(A_transformed,
+                                        distance_upper_bound=max_distance)
+
+        # Filter pairs with distances within the threshold
+        valid_idx = np.where(distances < max_distance)[0]
+        A_matched = A_transformed[valid_idx]
+        B_matched = B[indices[valid_idx]]
+
+        if len(A_matched) < 3 or len(B_matched) < 3:
+            break  # Not enough points for a stable alignment
+
+        # Compute the optimal rotation and translation (using Procrustes analysis)
+        R, scale = orthogonal_procrustes(A_matched, B_matched)
+        t = B_matched.mean(axis=0) - np.dot(A_matched.mean(axis=0), R)
+
+    # Construct the final transformation matrix
+    T = np.eye(4)
+    T[:3, :3] = R
+    T[:3, 3] = t
+
+    return T, np.dot(original_A, R.T) + t
+
+
 def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
                     return_indices=False, return_distances=False):
     src_vectices = src_bdp_obj.get_polydata_vertices()
     tgt_vertices = tgt_bdp_obj.get_polydata_vertices()
+
     initial_size = len(tgt_vertices)
     logging.warning(
         'Number of vertices in source: {}'.format(len(src_vectices)))
@@ -85,6 +143,7 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
     logging.warning('Number of vertices of target within source '
                     'bbox: {}'.format(len(bbox_in_indices)))
 
+    # This makes the convex hull bigger and more stable for computation
     barycenter = np.mean(src_vectices, axis=0)
     tmp_convex_hull = src_vectices[ConvexHull(src_vectices).vertices]
     barycenter = np.mean(tmp_convex_hull, axis=0)
@@ -100,6 +159,9 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
     tgt_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(
         convex_hull_in_indices)
     tgt_vertices = tgt_vertices[convex_hull_in_indices]
+
+    # To help matching, we will run a small ICP first
+    # _, src_vectices = run_icp(src_vectices, tgt_vertices, max_dist)
     logging.warning('Number of vertices of target within convex hull of '
                     'source: {}'.format(len(convex_hull_in_indices)))
 
