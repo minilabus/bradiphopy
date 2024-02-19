@@ -8,6 +8,7 @@ Colorize PolyData from and to any of these extensions:
 
 import argparse
 import colorsys
+import json
 import os
 
 import matplotlib
@@ -32,6 +33,9 @@ def _build_arg_parser():
                     help='Select the colormap for axis ordering coloring) '
                     '[%(default)s].\nUse two Matplotlib named color separeted '
                     'by a - to create your own colormap.')
+    p2.add_argument('--cLUT',
+                    help='Select the colormap from a .json file containing a '
+                         'color LUT (uses basename as key in the dict).')
     p.add_argument('--axis', default='auto', choices=['x', 'y', 'z', 'auto'],
                    help='Axis to use for the colormap [%(choices)s].')
 
@@ -59,12 +63,23 @@ def main():
     bdp_obj = BraDiPhoHelper3D(polydata)
     vertices = bdp_obj.get_polydata_vertices()
 
+    basename = os.path.basename(args.in_file)
+    if args.cLUT:
+        with open(args.cLUT, 'r') as f:
+            cLUT = json.load(f)
+        name = os.path.splitext(basename)[0]
+        if name in cLUT:
+            args.color = [c for c in cLUT[name]]
+        else:
+            args.color = [0, 0, 0]
+
     try:
         rgb_scalar = bdp_obj.get_scalar('RGB')
         empty = False
     except ValueError:
         rgb_scalar = np.ones(vertices.shape) * 255
         empty = True
+
     hsv_scalar = matplotlib.colors.rgb_to_hsv(rgb_scalar)
     if args.color:
         if empty:
@@ -72,6 +87,7 @@ def main():
             rgb_scalar[:] = args.color
         else:
             hsv_scalar[:, 0] = colorsys.rgb_to_hsv(*args.color)[0]
+            hsv_scalar[:, 1] = colorsys.rgb_to_hsv(*args.color)[1]
             rgb_scalar = matplotlib.colors.hsv_to_rgb(hsv_scalar)
     else:
         bbox = np.min(vertices, axis=0), np.max(vertices, axis=0)
@@ -81,7 +97,7 @@ def main():
             axis = 'xyz'.index(args.axis)
 
         cmap = get_colormap(args.colormap)
-        # rgb_scalar = np.zeros(vertices.shape)
+
         normalized_value = (vertices[:, axis] - bbox[0][axis]) / \
             (bbox[1][axis] - bbox[0][axis])
         rgb_scalar = cmap(normalized_value)[:, 0:3]

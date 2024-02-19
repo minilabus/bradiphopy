@@ -49,8 +49,6 @@ def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
 
-    if not os.path.isdir(args.out_dir):
-        os.makedirs(args.out_dir)
     if os.path.isdir(args.out_dir):
         if not args.overwrite:
             raise IOError(
@@ -58,6 +56,8 @@ def main():
         else:
             shutil.rmtree(args.out_dir)
             os.makedirs(args.out_dir)
+    elif not os.path.isdir(args.out_dir):
+        os.makedirs(args.out_dir)
 
     for i, src_file in enumerate(args.src_files):
         basename = os.path.basename(src_file)
@@ -99,8 +99,8 @@ def main():
     valid_vertices = vertices[annotations != 0]
 
     # Query the tree for the nearest neighbors of the valid vertices
-    distances, indices = tree.query(valid_vertices, k=100,
-                                    distance_upper_bound=args.distance * 10)
+    distances, indices = tree.query(valid_vertices, k=10,
+                                    distance_upper_bound=args.distance * 5)
 
     # Filter out indices beyond the distance threshold
     valid_indices = indices[distances != np.inf]
