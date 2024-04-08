@@ -91,11 +91,11 @@ def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
 
-    if os.path.isfile(args.out_file) and not args.overwrite:
+    if os.path.isfile(args.out_filename) and not args.overwrite:
         raise IOError(
-            '{} already exists, use -f to overwrite.'.format(args.out_file))
+            '{} already exists, use -f to overwrite.'.format(args.out_filename))
 
-    _, ext = os.path.splitext(args.out_file)
+    _, ext = os.path.splitext(args.out_filename)
     if ext != '.ply':
         raise ValueError('Output file must be a .ply file to support color.')
 
@@ -125,7 +125,7 @@ def main():
     color_arr[:] = args.color
     obj_out.set_scalar(color_arr, 'RGB', dtype='uint8')
 
-    save_polydata(obj_out.get_polydata(), args.out_file, ascii=args.ascii)
+    save_polydata(obj_out.get_polydata(), args.out_filename, ascii=args.ascii)
 
 
 if __name__ == '__main__':
