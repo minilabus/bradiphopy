@@ -138,7 +138,7 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
                                               max_condition))[0]
 
     # Select the vertices in the bbox
-    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(bbox_in_indices)
+    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata(bbox_in_indices)
     tgt_vertices = tgt_vertices[bbox_in_indices]
     logging.warning('Number of vertices of target within source '
                     'bbox: {}'.format(len(bbox_in_indices)))
@@ -156,12 +156,12 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
     convex_hull_in_indices = [i for i in range(len(tgt_vertices))
                               if convex_hull.find_simplex(tgt_vertices[i]) >= 0]
     # Select the vertices in the convex hull
-    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(
+    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata(
         convex_hull_in_indices)
     tgt_vertices = tgt_vertices[convex_hull_in_indices]
 
     # To help matching, we will run a small ICP first
-    # _, src_vectices = run_icp(src_vectices, tgt_vertices, max_dist)
+    _, src_vectices = run_icp(src_vectices, tgt_vertices, max_dist)
     logging.warning('Number of vertices of target within convex hull of '
                     'source: {}'.format(len(convex_hull_in_indices)))
 
@@ -170,7 +170,7 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
                                       k=1, distance_upper_bound=max_dist)
     # Select the vertices within the max distance
     close_indices = np.argwhere(distances < max_dist).flatten()
-    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(close_indices)
+    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata(close_indices)
     real_indices = bbox_in_indices[convex_hull_in_indices][close_indices]
     logging.warning('Number of vertices of target within max distance of '
                     'source: {}'.format(len(close_indices)))

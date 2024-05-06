@@ -132,8 +132,7 @@ def main():
                                     os.path.splitext(basename)[0] + args.out_suffix + '.ply')
 
         if len(final_indices):
-            tmp_bdp_obj = tgt_bdp_obj.subsample_polydata_vertices(
-                final_indices)
+            tmp_bdp_obj = tgt_bdp_obj.subsample_polydata(final_indices)
             save_polydata(tmp_bdp_obj.get_polydata(),
                           out_filename, ascii=args.ascii)
         else:

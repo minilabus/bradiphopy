@@ -76,7 +76,7 @@ class BraDiPhoHelper3D():
             i += 1
         return names
 
-    def subsample_polydata_vertices(self, indices):
+    def subsample_polydata(self, indices):
         """Subsample the vertices of a polydata object."""
         if not len(indices):
             return BraDiPhoHelper3D(vtk.vtkPolyData())
@@ -85,12 +85,34 @@ class BraDiPhoHelper3D():
             raise ValueError("Indices out of range.")
 
         if self.get_polydata_triangles() == []:
-            return self.subsample_mesh_vertices(indices)
+            new_vertices, new_faces = self.subsample_mesh(indices)
+            bdo_obj = self.generate_bdp_obj(new_vertices, triangles=new_faces)
+            return bdo_obj
         else:
             return self.subsample_point_cloud_vertices(indices)
 
-    def subsample_mesh_vertices(self, indices):
-        raise NotImplementedError
+    def subsample_mesh(self, indices):
+        vertices = self.get_polydata_vertices()
+        faces = self.get_polydata_triangles()
+        indices = [ind for ind in indices if ind < len(vertices)]
+
+        # return vertices[valid_indices], subsampled_faces
+        indices = sorted(set(indices))
+
+        # Filter the vertices using the indices list
+        new_vertices = vertices[indices]
+
+        # Create a mapping from old vertex indices to new vertex indices
+        index_map = {old_idx: new_idx for new_idx, old_idx in enumerate(indices)}
+
+        # Iterate through each face, check if all vertices are in the new set, and remap indices
+        mask = np.all(np.isin(faces, indices), axis=1)
+        new_faces = []
+        for i in np.where(mask)[0]:
+            remapped_face = [index_map[idx] for idx in faces[i]]
+            new_faces.append(remapped_face)
+
+        return new_vertices, np.array(new_faces)
 
     def subsample_point_cloud_vertices(self, indices):
         vertices = self.get_polydata_vertices()
@@ -100,9 +122,9 @@ class BraDiPhoHelper3D():
         new_vertices = vertices[indices]
         new_arrays = [array[indices] for array in arrays]
 
-        polydata = self.generate_bdp_obj(new_vertices,
-                                         arrays=zip(names, new_arrays))
-        return polydata
+        bdo_obj = self.generate_bdp_obj(new_vertices,
+                                         arrays = zip(names, new_arrays))
+        return bdo_obj
 
     def get_scalar(self, name):
         scalar = self.polydata.GetPointData().GetScalars(name)
