@@ -45,15 +45,9 @@ def main():
         raise IOError(
             '{} already exists, use -f to overwrite.'.format(args.out_file))
 
-    polydata = load_polydata(args.in_file)
+    polydata = load_polydata(args.in_file, to_lps=args.to_lps)
     transform = vtk.vtkTransform()
     transform.Scale([args.scaling]*3)
-    if args.to_lps:
-        flip_LPS = vtk.vtkMatrix4x4()
-        flip_LPS.Identity()
-        flip_LPS.SetElement(0, 0, -1)
-        flip_LPS.SetElement(1, 1, -1)
-        transform.Concatenate(flip_LPS)
 
     transformFilter = vtk.vtkTransformPolyDataFilter()
     transformFilter.SetInputData(polydata)

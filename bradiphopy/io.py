@@ -10,7 +10,7 @@ import vtk
 VTK_EXTENSIONS = [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
 
 
-def load_polydata(filename):
+def load_polydata(filename, to_lps=False):
     if not os.path.isfile(filename):
         raise IOError('{} does not exist.'.format(filename))
 
@@ -37,7 +37,21 @@ def load_polydata(filename):
 
     reader.SetFileName(filename)
     reader.Update()
-    return reader.GetOutput()
+
+    transform = vtk.vtkTransform()
+    flip_LPS = vtk.vtkMatrix4x4()
+    flip_LPS.Identity()
+    if to_lps:
+        flip_LPS.SetElement(0, 0, -1)
+        flip_LPS.SetElement(1, 1, -1)
+        transform.Concatenate(flip_LPS)
+
+    transformFilter = vtk.vtkTransformPolyDataFilter()
+    transformFilter.SetInputData(reader.GetOutput())
+    transformFilter.SetTransform(transform)
+    transformFilter.Update()
+
+    return transformFilter.GetOutput()
 
 
 def save_polydata(polydata, filename, ascii=True):
