@@ -2,16 +2,30 @@
 #  -*- coding: utf-8 -*-
 
 """
+Filter a tractogram with surfaces. The streamlines are kept if they are close
+to any of the surfaces.
 
+The proximity is defined as the distance between a streamline and the closest
+point on a surface. The distance is computed in mm.
+
+The mode defines how the proximity is computed:
+- any: keep the streamline if at least one point is close to the surface.
+- all: keep the streamline if all points are close to the surface.
+- either_end: keep the streamline if at least one of the endpoints is close to
+  the surface.
+- both_ends: keep the streamline if both endpoints are close to the surface.
+
+The criteria defines if the streamlines close to the surface should be included
+or excluded from the output tractogram.
 """
 
 import argparse
-from bradiphopy.io import load_polydata, save_polydata
+
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.stateful_tractogram import (set_sft_logger_level,
-                                         StatefulTractogram, Space)
-from bradiphopy.bradipho_helper import BraDiPhoHelper3D
 import numpy as np
+
+from bradiphopy.bradipho_helper import BraDiPhoHelper3D
+from bradiphopy.io import load_polydata
 from bradiphopy.segment import filter_from_surface
 
 MODES = ['any', 'all', 'either_end', 'both_ends']
@@ -29,12 +43,8 @@ def _build_arg_parser():
 
     p.add_argument('--individual_surface', nargs='+', action='append',
                    help="ROI_NAME MODE CRITERIA DISTANCE "
-                        "(distance in voxel is optional)\n"
-                        "Filename of a hand drawn ROI (.nii or .nii.gz).")
-    p.add_argument('--entire_parcellation', nargs='+', action='append',
-                   help="ROI_NAME ANNOT ID MODE CRITERIA DISTANCE "
-                        "(distance in voxel is optional)\n"
-                        "Filename of an atlas (.nii or .nii.gz).")
+                        "(distance in mm is optional)\n"
+                        "Filename of a surface to use as a ROI.")
 
     return p
 
@@ -45,7 +55,6 @@ def main():
     args = parser.parse_args()
     
     min_arg = 0 if args.individual_surface is None else len(args.individual_surface)
-    min_arg += 0 if args.entire_parcellation is None else len(args.entire_parcellation)
     if min_arg == 0:
         raise ValueError("At least one ROI must be provided.")
     

@@ -2,24 +2,32 @@
 #  -*- coding: utf-8 -*-
 
 """
-If you want to compare multiple tractograms with a single surface,
-you can run the script multiple times with different tractograms.
+Compute the coverage of a tractogram to surfaces or the coverage of surfaces
+to a tractogram.
 
-If you want to compare multiple surfaces with a single tractogram,
-you can run the script multiple times with different surfaces."
+The coverage is defined as the proportion of streamlines that are close to a
+surface or the proportion of surface points that are close to a streamline.
+
+The proximity is defined as the distance between a streamline and the closest
+point on a surface. The distance is computed in mm.
+
+--endpoints_only can be used to consider only the endpoints of the streamlines
+to compute the proximity scores.
 """
 
 import argparse
-from bradiphopy.io import load_polydata, save_polydata
-from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.stateful_tractogram import (set_sft_logger_level,
-                                         StatefulTractogram, Space)
-from bradiphopy.bradipho_helper import BraDiPhoHelper3D
-import numpy as np
-from bradiphopy.segment import get_proximity_scores
-from sklearn.cluster import KMeans
+import json
 import os
 import shutil
+
+from dipy.io.streamline import load_tractogram
+import numpy as np
+from sklearn.cluster import KMeans
+
+from bradiphopy.bradipho_helper import BraDiPhoHelper3D
+from bradiphopy.io import load_polydata
+from bradiphopy.segment import get_proximity_scores
+
 
 MODES = ['any', 'all', 'either_end', 'both_ends']
 CRITERIA = ['include', 'exclude']
@@ -33,13 +41,15 @@ def _build_arg_parser():
                    help='Path of the input surface files.')
     p.add_argument('in_tractograms', nargs='+',
                    help='Path of the input tractogram file (only support .trk).')
+    p.add_argument('out_json,
+                   help='Path of the output json file.')
 
     p.add_argument('--max_distance', type=float, default=5,
                    help='Maximum distance to consider a streamline as '
-                   'close to a surface. Default: 5.')
+                        'close to a surface. Default: 5.')
     p.add_argument('--endpoints_only', action='store_true',
                    help='Consider only the endpoints of the streamlines '
-                   'to compute the proximity scores.')
+                        'to compute the proximity scores.')
 
     p.add_argument('--out_dir',
                    help='Path of the output directory for symlinks.')
@@ -50,13 +60,6 @@ def _build_arg_parser():
                    help='Print the best cluster of surfaces above the mean in both.')
 
     return p
-
-
-def _get_proximity_scores_wrapper(sft, bdp_obj, distance=1, endpoints_only=False):
-    surf_coverage, sft_coverage = get_proximity_scores(
-        sft, bdp_obj, distance=distance,
-        endpoints_only=endpoints_only)
-    return surf_coverage, sft_coverage
 
 
 def main():
@@ -86,7 +89,7 @@ def main():
             polydata = load_polydata(surf_name, to_lps=True)
             bdp_obj = BraDiPhoHelper3D(polydata)
 
-            surf_coverage, sft_coverage = _get_proximity_scores_wrapper(
+            surf_coverage, sft_coverage = get_proximity_scores(
                 sft, bdp_obj, distance=args.max_distance,
                 endpoints_only=args.endpoints_only)
             if len(args.in_tractograms) > 1:
@@ -94,8 +97,8 @@ def main():
             else:
                 score_result[surf_name] = (surf_coverage, sft_coverage)
 
-            if all([x[0] == 0 and x[1] == 0 for x in score_result.values()]):
-                raise ValueError('No streamlines are close to any surface.')
+    if all([x[0] == 0 and x[1] == 0 for x in score_result.values()]):
+        raise ValueError('No streamlines are close to any surface.')
 
     if args.print_top_N:
         mean_surf_coverage = np.mean([x[0] for x in score_result.values()])
@@ -140,6 +143,9 @@ def main():
         print('\tSurface coverage: {}'.format(scores[0]))
         print('\tTractogram coverage: {}'.format(scores[1]))
         print()
+
+    with open(args.out_json, 'w') as f:
+        json.dump(score_result, f, indent=2, sort_keys=True)
 
 
 if __name__ == "__main__":
