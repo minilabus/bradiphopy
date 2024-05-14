@@ -41,7 +41,7 @@ def _build_arg_parser():
                    help='Path of the input surface files.')
     p.add_argument('in_tractograms', nargs='+',
                    help='Path of the input tractogram file (only support .trk).')
-    p.add_argument('out_json,
+    p.add_argument('out_json',
                    help='Path of the output json file.')
 
     p.add_argument('--max_distance', type=float, default=5,
@@ -76,7 +76,7 @@ def main():
         raise ValueError('Either pick multiple surface or multiple tractograms'
                          ', not both.')
 
-    if os.path.isdir(args.out_dir):
+    if args.out_dir and os.path.isdir(args.out_dir):
         shutil.rmtree(args.out_dir)
     if args.out_dir and not os.path.isdir(args.out_dir):
         os.makedirs(args.out_dir)
@@ -105,7 +105,7 @@ def main():
         mean_sft_coverage = np.mean([x[1] for x in score_result.values()])
         top_both = [k for k, v in score_result.items()
                     if v[0] > mean_surf_coverage and v[1] > mean_sft_coverage]
-        top_both = sorted(top_both, key=lambda x: score_result[x][0],
+        top_both = sorted(top_both, key=lambda x: top_both[x][0],
                           reverse=True)
         top_both = top_both[:args.print_top_N]
     elif args.print_best_cluster:
@@ -124,7 +124,8 @@ def main():
         top_both = [k for i, k in enumerate(
             score_result.keys()) if labels[i] == labels_to_pick]
     else:
-        top_both = score_result.keys()
+        top_both = sorted(score_result, key=lambda x: score_result[x][0],
+                          reverse=True)
 
     print('Top files above mean in both:')
     for filename in top_both:
@@ -135,11 +136,13 @@ def main():
             os.symlink(in_filename, out_filename)
 
         # Printing results
+        scores = score_result[filename]
+        if sum(scores) < 1e-6:
+            continue
         if len(args.in_tractograms) > 1:
             print('\tTractogram: {}'.format(filename))
         else:
             print('\tSurface: {}'.format(filename))
-        scores = score_result[filename]
         print('\tSurface coverage: {}'.format(scores[0]))
         print('\tTractogram coverage: {}'.format(scores[1]))
         print()

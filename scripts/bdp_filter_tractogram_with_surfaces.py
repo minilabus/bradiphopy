@@ -45,7 +45,9 @@ def _build_arg_parser():
                    help="ROI_NAME MODE CRITERIA DISTANCE "
                         "(distance in mm is optional)\n"
                         "Filename of a surface to use as a ROI.")
-
+    p.add_argument('--reuse_matched_pts', action='store_true',
+                     help="Do not reuse already matched points when"
+                          "filtering with multiple surfaces.")
     return p
 
 
@@ -59,8 +61,10 @@ def main():
         raise ValueError("At least one ROI must be provided.")
     
     sft = load_tractogram(args.in_tractogram, 'same')
-    indices = np.arange(len(sft.streamlines))
+    matched_pts = np.zeros(len(sft.streamlines._data), dtype=bool) 
+
     for surf_opt in args.individual_surface:
+        indices = np.arange(len(sft))
         if len(surf_opt) == 3:
             roi_name, mode, criteria = surf_opt[0:3]
             distance = 1.0
@@ -76,10 +80,19 @@ def main():
 
         polydata = load_polydata(roi_name, to_lps=True)
         bdp_obj = BraDiPhoHelper3D(polydata)
-        curr_indices = filter_from_surface(sft, bdp_obj, mode,
-                                           criteria, distance)
+        curr_indices, matched_pts = filter_from_surface(sft, bdp_obj, mode,
+                                           criteria, distance, matched_pts)
         indices = np.intersect1d(indices, curr_indices)
-        sft = sft[indices]
+
+        if len(indices) != 0:
+            # Use the ArraySequence slicing to keep the matched_points
+            arr_seq = sft.streamlines.copy()
+            arr_seq._data = matched_pts
+            matched_pts = arr_seq[indices].copy()._data
+            sft = sft[indices]
+
+        else:
+            sft = StatefulTractogram([], sft, Space.RASMM)
 
     save_tractogram(sft, args.out_tractogram, bbox_valid_check=False)
 
