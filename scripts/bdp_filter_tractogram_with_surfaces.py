@@ -21,6 +21,7 @@ or excluded from the output tractogram.
 
 import argparse
 
+from dipy.io.stateful_tractogram import StatefulTractogram, Space
 from dipy.io.streamline import load_tractogram, save_tractogram
 import numpy as np
 
