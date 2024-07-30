@@ -69,8 +69,8 @@ def main():
         1] != '.trk']
 
     if len(in_surfaces) > 1 and len(in_tractograms) > 1:
-        raise ValueError('Either pick multiple surface or multiple tractograms'
-                         ', not both.')
+        raise ValueError('Either pick multiple surfaces or multiple tractograms, '
+                         'not both.')
 
     if args.out_dir and os.path.isdir(args.out_dir):
         shutil.rmtree(args.out_dir)

@@ -29,16 +29,25 @@ def _build_arg_parser():
     p2 = p.add_mutually_exclusive_group(required=True)
     p2.add_argument('--color', nargs=3, type=int,
                     help='Color as RGB (0-255).')
-    p2.add_argument('--colormap', default='viridis',
-                    help='Select the colormap for axis ordering coloring) '
-                    '[%(default)s].\nUse two Matplotlib named color separeted '
-                    'by a - to create your own colormap.')
+    p2.add_argument('--colormap', nargs='?', const='jet',
+                    help='Select the colormap for axis ordering coloring '
+                         '[%(default)s].\nUse two Matplotlib named color '
+                         'separeted by a - to create your own colormap.')
     p2.add_argument('--cLUT',
                     help='Select the colormap from a .json file containing a '
                          'color LUT (uses basename as key in the dict).')
     p.add_argument('--axis', default='auto', choices=['x', 'y', 'z', 'auto'],
                    help='Axis to use for the colormap [%(choices)s].')
 
+    p.add_argument('--saturation_multiplier', type=float, default=1.0,
+                   help='Saturation multiplier [%(default)s].'
+                        'Must be lower than 1.0\n'
+                        'Lower = Move toward white, gray, black.')
+    p.add_argument('--value_multiplier', type=float, default=1.8,
+                   help='Value multiplier [%(default)s].\n'
+                        'Higher = More intense color or luminosity.')
+    p.add_argument('--keep_saturation', action='store_true',
+                   help='Keep the saturation of the original color.')
     p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '
                         '(instead of binary).')
@@ -101,12 +110,27 @@ def main():
         normalized_value = (vertices[:, axis] - bbox[0][axis]) / \
             (bbox[1][axis] - bbox[0][axis])
         rgb_scalar = cmap(normalized_value)[:, 0:3]
+
         if empty:
             rgb_scalar *= 255
-        else:
-            hsv_scalar[:, 0] = matplotlib.colors.rgb_to_hsv(rgb_scalar)[:, 0]
-            rgb_scalar = matplotlib.colors.hsv_to_rgb(hsv_scalar)
 
+    hsv_scalar[:, 0] = matplotlib.colors.rgb_to_hsv(rgb_scalar)[:, 0]
+
+    if not args.keep_saturation:
+        hsv_scalar[:, 1] = matplotlib.colors.rgb_to_hsv(rgb_scalar)[:, 1]
+
+    hsv_scalar[:, 1] *= args.saturation_multiplier
+    hsv_scalar[:, 2] *= args.value_multiplier
+    # print(hsv_scalar.mean(axis=0))
+
+    np.clip(hsv_scalar[:, 0], 0, 1, out=hsv_scalar[:, 0])
+    np.clip(hsv_scalar[:, 1], 0, 1, out=hsv_scalar[:, 1])
+    np.clip(hsv_scalar[:, 2], 0, 255, out=hsv_scalar[:, 2])
+    rgb_scalar = matplotlib.colors.hsv_to_rgb(hsv_scalar)
+    # compute luminance before
+    # hsl = matplotlib.colors.rgb_to_hsl(rgb_scalar)
+    # rgb_scalar *= 255
+    print(rgb_scalar.mean(axis=0))
     bdp_obj.set_scalar(rgb_scalar, 'RGB', dtype='uint8')
     save_polydata(bdp_obj.get_polydata(), args.out_file, ascii=args.ascii)
 
