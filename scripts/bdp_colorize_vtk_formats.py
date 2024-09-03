@@ -39,15 +39,21 @@ def _build_arg_parser():
     p.add_argument('--axis', default='auto', choices=['x', 'y', 'z', 'auto'],
                    help='Axis to use for the colormap [%(choices)s].')
 
-    p.add_argument('--saturation_multiplier', type=float, default=1.0,
-                   help='Saturation multiplier [%(default)s].'
-                        'Must be lower than 1.0\n'
+    p.add_argument_group('Color manipulation')
+    s = p.add_mutually_exclusive_group()
+    s.add_argument('--saturation_target', type=float, const=0.6, nargs='?',
+                   help='Target saturation. Must be lower than 1.0\n'
                         'Lower = Move toward white, gray, black.')
-    p.add_argument('--value_multiplier', type=float, default=1.8,
-                   help='Value multiplier [%(default)s].\n'
-                        'Higher = More intense color or luminosity.')
-    p.add_argument('--keep_saturation', action='store_true',
-                   help='Keep the saturation of the original color.')
+    s.add_argument('--saturation_multiplier', type=float, const=1.0, nargs='?',
+                   help='Saturation multiplier. Must be lower than 1.0\n'
+                        'Lower = Move toward white, gray, black.')
+    v = p.add_mutually_exclusive_group()
+    v.add_argument('--value_target', type=float, const=160, nargs='?',
+                   help='Target value. Must be lower than 255\n'
+                        'Should be around 100-192.')
+    v.add_argument('--value_multiplier', type=float, const=1.8, nargs='?',
+                   help='Value multiplier. Higher = More intense color\n'
+                        'Should be around 1.25-2.0.')
     p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '
                         '(instead of binary).')
@@ -90,6 +96,7 @@ def main():
         empty = True
 
     hsv_scalar = matplotlib.colors.rgb_to_hsv(rgb_scalar)
+
     if args.color:
         if empty:
             rgb_scalar = np.empty_like(vertices)
@@ -116,21 +123,20 @@ def main():
 
     hsv_scalar[:, 0] = matplotlib.colors.rgb_to_hsv(rgb_scalar)[:, 0]
 
-    if not args.keep_saturation:
-        hsv_scalar[:, 1] = matplotlib.colors.rgb_to_hsv(rgb_scalar)[:, 1]
-
-    hsv_scalar[:, 1] *= args.saturation_multiplier
-    hsv_scalar[:, 2] *= args.value_multiplier
-    # print(hsv_scalar.mean(axis=0))
+    if args.saturation_target is not None:
+        hsv_scalar[:, 1] *= args.saturation_target / hsv_scalar[:, 1].mean()
+    if args.value_target is not None:
+        hsv_scalar[:, 2] *= args.value_target / hsv_scalar[:, 2].mean()
+    if args.saturation_multiplier is not None:
+        hsv_scalar[:, 1] *= args.saturation_multiplier
+    if args.value_multiplier is not None:
+        hsv_scalar[:, 2] *= args.value_multiplier
 
     np.clip(hsv_scalar[:, 0], 0, 1, out=hsv_scalar[:, 0])
     np.clip(hsv_scalar[:, 1], 0, 1, out=hsv_scalar[:, 1])
     np.clip(hsv_scalar[:, 2], 0, 255, out=hsv_scalar[:, 2])
     rgb_scalar = matplotlib.colors.hsv_to_rgb(hsv_scalar)
-    # compute luminance before
-    # hsl = matplotlib.colors.rgb_to_hsl(rgb_scalar)
-    # rgb_scalar *= 255
-    print(rgb_scalar.mean(axis=0))
+
     bdp_obj.set_scalar(rgb_scalar, 'RGB', dtype='uint8')
     save_polydata(bdp_obj.get_polydata(), args.out_file, ascii=args.ascii)
 
