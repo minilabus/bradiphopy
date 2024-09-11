@@ -40,7 +40,7 @@ def filter_from_surface(sft, bdp_obj, mode, criteria, distance,
     if criteria == 'exclude':
         indices = np.setdiff1d(np.arange(len(sft)), indices)
 
-    matched_pts = dist != np.inf
+    matched_pts = dist != np.inf if matched_pts is not None else None
     return indices, matched_pts
 
 

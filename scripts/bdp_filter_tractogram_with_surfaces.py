@@ -62,7 +62,10 @@ def main():
         raise ValueError("At least one ROI must be provided.")
 
     sft = load_tractogram(args.in_tractogram, 'same')
-    matched_pts = np.zeros(len(sft.streamlines._data), dtype=bool)
+    if not args.reuse_matched_pts:
+        matched_pts = np.zeros(len(sft.streamlines._data), dtype=bool)
+    else:
+        matched_pts = None
 
     for surf_opt in args.individual_surface:
         indices = np.arange(len(sft))
@@ -89,12 +92,13 @@ def main():
         if len(indices) != 0:
             # Use the ArraySequence slicing to keep the matched_points
             arr_seq = sft.streamlines.copy()
-            arr_seq._data = matched_pts
-            matched_pts = arr_seq[indices].copy()._data
+            if not args.reuse_matched_pts:
+                arr_seq._data = matched_pts
+                matched_pts = arr_seq[indices].copy()._data
             sft = sft[indices]
 
         else:
-            sft = StatefulTractogram([], sft, Space.RASMM)
+            sft = StatefulTractogram.from_sft([], sft)
 
     save_tractogram(sft, args.out_tractogram, bbox_valid_check=False)
 
