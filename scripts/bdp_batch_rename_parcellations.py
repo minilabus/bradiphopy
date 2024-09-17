@@ -51,7 +51,8 @@ def main():
     with open(args.in_json, 'r') as f:
         data = json.load(f)
 
-    ext = args.extention if args.extention.startswith('.') else '.' + args.extention
+    ext = args.extention if args.extention.startswith(
+        '.') else '.' + args.extention
 
     # Check which files are in the input directory (key vs value)
     total_entries = len(data)

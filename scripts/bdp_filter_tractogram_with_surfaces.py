@@ -47,22 +47,22 @@ def _build_arg_parser():
                         "(distance in mm is optional)\n"
                         "Filename of a surface to use as a ROI.")
     p.add_argument('--reuse_matched_pts', action='store_true',
-                     help="Do not reuse already matched points when"
-                          "filtering with multiple surfaces.")
+                   help="Do not reuse already matched points when"
+                   "filtering with multiple surfaces.")
     return p
-
 
 
 def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
-    
-    min_arg = 0 if args.individual_surface is None else len(args.individual_surface)
+
+    min_arg = 0 if args.individual_surface is None else len(
+        args.individual_surface)
     if min_arg == 0:
         raise ValueError("At least one ROI must be provided.")
-    
+
     sft = load_tractogram(args.in_tractogram, 'same')
-    matched_pts = np.zeros(len(sft.streamlines._data), dtype=bool) 
+    matched_pts = np.zeros(len(sft.streamlines._data), dtype=bool)
 
     for surf_opt in args.individual_surface:
         indices = np.arange(len(sft))
@@ -77,12 +77,13 @@ def main():
         if mode not in MODES:
             raise ValueError(f"Mode {mode} is not valid. Use one of {MODES}.")
         if criteria not in CRITERIA:
-            raise ValueError(f"Criteria {criteria} is not valid. Use one of {CRITERIA}.")
+            raise ValueError(
+                f"Criteria {criteria} is not valid. Use one of {CRITERIA}.")
 
         polydata = load_polydata(roi_name, to_lps=True)
         bdp_obj = BraDiPhoHelper3D(polydata)
         curr_indices, matched_pts = filter_from_surface(sft, bdp_obj, mode,
-                                           criteria, distance, matched_pts)
+                                                        criteria, distance, matched_pts)
         indices = np.intersect1d(indices, curr_indices)
 
         if len(indices) != 0:
@@ -96,7 +97,6 @@ def main():
             sft = StatefulTractogram([], sft, Space.RASMM)
 
     save_tractogram(sft, args.out_tractogram, bbox_valid_check=False)
-
 
 
 if __name__ == "__main__":

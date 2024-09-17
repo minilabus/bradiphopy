@@ -1,3 +1,4 @@
+import vtk.util.numpy_support as ns
 import vtk
 import sys
 import numpy as np
@@ -14,6 +15,7 @@ datatype_map = {
     np.dtype('float64'): vtk.VTK_DOUBLE,
 }
 
+
 def numpy_to_vtk_array(array, name=None, dtype=None, deep=True):
     if dtype is not None:
         vtk_dtype = datatype_map[np.dtype(dtype)]
@@ -25,15 +27,13 @@ def numpy_to_vtk_array(array, name=None, dtype=None, deep=True):
         vtk_array.SetName(name)
     return vtk_array
 
+
 # reader = vtk.vtkPLYReader()
 reader = vtk.vtkXMLPolyDataReader()
 reader.SetFileName(sys.argv[1])
 reader.Update()
 
-import vtk.util.numpy_support as ns
 
-
-import numpy as np
 arr = np.array([int(sys.argv[2])], dtype=int)
 arr = numpy_to_vtk_array(np.array(arr), name='TimeValue')
 polydata = reader.GetOutput()

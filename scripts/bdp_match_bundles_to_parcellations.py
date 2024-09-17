@@ -70,8 +70,8 @@ def main():
     # Compute scores between each endpoint mask and atlas labels
     for i, endpoint in enumerate(endpoints):
         distance_map = compute_distance_map(endpoint, atlas_binary,
-                                            max_distance=5,
-                                            symmetric=False)
+                                            max_distance=50,
+                                            symmetric=True)
         for j, label in enumerate(labels):
             curr_distance_map = distance_map.copy()
             curr_distance_map[endpoint == 0] = np.inf
@@ -84,9 +84,11 @@ def main():
 
     # Compute cost matrix by summing scores for each bundle
     scores[scores < 1e-3] -= np.mean(scores[scores > 1e-3])
+    scores = scores.astype(int)
     cost_matrix = np.sum(scores, axis=1)
     indices = np.argsort(cost_matrix)
 
+    np.set_printoptions(suppress=True)
     for ind in indices:
         print(f'Bundle: {args.in_bundles[ind]}, Cost: {cost_matrix[ind]}')
         print(f'Labels: {labels}, Scores: {scores[ind, :]}')
