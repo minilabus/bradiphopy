@@ -37,7 +37,7 @@ def main():
     if not os.path.isfile(args.in_json):
         raise IOError(
             '{} does not exist.'.format(args.in_json))
-    
+
     if not os.path.isdir(args.out_dir):
         os.mkdir(args.out_dir)
     else:
@@ -54,7 +54,6 @@ def main():
     ext = args.extention if args.extention.startswith('.') else '.' + args.extention
 
     # Check which files are in the input directory (key vs value)
-    total_files = len(os.listdir(args.in_dir))
     total_entries = len(data)
     key_count, value_count = 0, 0
     for key, value in data.items():
@@ -67,6 +66,10 @@ def main():
         if os.path.isfile(in_file_value):
             value_count += 1
 
+    if value_count == key_count:
+        raise ValueError('Both keys and values are in the input directory.\n'
+                         'The input folder must have either naming convention, '
+                         'not both.')
     if total_entries - key_count < total_entries - value_count:
         use_key = True
         print('Using the keys as input file.')
