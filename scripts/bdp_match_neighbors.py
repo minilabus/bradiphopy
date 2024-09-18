@@ -22,14 +22,14 @@ def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('src_files', nargs='+',
-                   help='Source (annot) filename (must be supported by VTK).')
+                   help='Annotated source filename (must be supported by VTK).')
     p.add_argument('tgt_file',
-                   help='Target filename (must be supported by VTK).')
+                   help='Unannotated target filename (must be supported by VTK).')
 
     p.add_argument('--out_suffix', default='_matched',
                    help='Output suffix (must be supported by VTK) [%(default)s].')
-    p.add_argument('--out_dir', default='./',
-                   help='Output suffix (must be supported by VTK) [%(default)s].')
+    p.add_argument('--out_dir',
+                   help='Output suffix (must be supported by VTK) [./].')
 
     p.add_argument('--distance', type=float, default=0.005,
                    help='Maximum distance for transfer (mm) [%(default)s]')
@@ -49,15 +49,17 @@ def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
 
-    if os.path.isdir(args.out_dir):
+    if args.out_dir is not None and os.path.isdir(args.out_dir):
         if not args.overwrite:
             raise IOError(
                 '{} already exists, use -f to overwrite.'.format(args.out_dir))
         else:
             shutil.rmtree(args.out_dir)
             os.makedirs(args.out_dir)
-    elif not os.path.isdir(args.out_dir):
+    elif args.out_dir is not None and not os.path.isdir(args.out_dir):
         os.makedirs(args.out_dir)
+    else:
+        args.out_dir = './'
 
     for i, src_file in enumerate(args.src_files):
         basename = os.path.basename(src_file)
@@ -65,7 +67,7 @@ def main():
                                     os.path.splitext(basename)[0] + args.out_suffix + '.ply')
         if os.path.isfile(out_filename) and not args.overwrite:
             raise IOError(
-                '{} already exists, use -f to overwrite.'.format(args.out_file))
+                '{} already exists, use -f to overwrite.'.format(out_filename))
 
     tgt_polydata = load_polydata(args.tgt_file)
     tgt_bdp_obj = BraDiPhoHelper3D(tgt_polydata)

@@ -70,11 +70,13 @@ def main():
     # Compute scores between each endpoint mask and atlas labels
     for i, endpoint in enumerate(endpoints):
         distance_map = compute_distance_map(endpoint, atlas_binary,
-                                            max_distance=50,
+                                            max_distance=10,
                                             symmetric=True)
+
         for j, label in enumerate(labels):
             curr_distance_map = distance_map.copy()
-            curr_distance_map[endpoint == 0] = np.inf
+            curr_distance_map = np.where((endpoint == 0) & (atlas_data == 0),
+                                         np.inf, curr_distance_map)
             curr_distance_map[atlas_data != label] = np.inf
 
             # Compute sum of exponential negative distances

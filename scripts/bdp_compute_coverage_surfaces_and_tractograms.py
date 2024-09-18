@@ -37,10 +37,8 @@ def _build_arg_parser():
     p = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
                                 description=__doc__)
 
-    p.add_argument('in_surfaces', nargs='+',
+    p.add_argument('in_files', nargs='+',
                    help='Path of the input surface files.')
-    p.add_argument('in_tractograms', nargs='+',
-                   help='Path of the input tractogram file (only support .trk).')
     p.add_argument('out_json',
                    help='Path of the output json file.')
 
@@ -65,16 +63,14 @@ def _build_arg_parser():
 def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
-
-    all_files = args.in_surfaces + args.in_tractograms
-    args.in_tractograms = [f for f in all_files if os.path.splitext(f)[
+    in_tractograms = [f for f in args.in_files if os.path.splitext(f)[
         1] == '.trk']
-    args.in_surfaces = [f for f in all_files if os.path.splitext(f)[
+    in_surfaces = [f for f in args.in_files if os.path.splitext(f)[
         1] != '.trk']
 
-    if len(args.in_surfaces) > 1 and len(args.in_tractograms) > 1:
-        raise ValueError('Either pick multiple surface or multiple tractograms'
-                         ', not both.')
+    if len(in_surfaces) > 1 and len(in_tractograms) > 1:
+        raise ValueError('Either pick multiple surfaces or multiple tractograms, '
+                         'not both.')
 
     if args.out_dir and os.path.isdir(args.out_dir):
         shutil.rmtree(args.out_dir)
@@ -82,17 +78,17 @@ def main():
         os.makedirs(args.out_dir)
 
     score_result = {}
-    for tractogram_name in args.in_tractograms:
+    for tractogram_name in in_tractograms:
         sft = load_tractogram(tractogram_name, 'same')
 
-        for surf_name in args.in_surfaces:
+        for surf_name in in_surfaces:
             polydata = load_polydata(surf_name, to_lps=True)
             bdp_obj = BraDiPhoHelper3D(polydata)
 
             surf_coverage, sft_coverage = get_proximity_scores(
                 sft, bdp_obj, distance=args.max_distance,
                 endpoints_only=args.endpoints_only)
-            if len(args.in_tractograms) > 1:
+            if len(in_tractograms) > 1:
                 score_result[tractogram_name] = (surf_coverage, sft_coverage)
             else:
                 score_result[surf_name] = (surf_coverage, sft_coverage)
@@ -139,7 +135,7 @@ def main():
         scores = score_result[filename]
         if sum(scores) < 1e-6:
             continue
-        if len(args.in_tractograms) > 1:
+        if len(in_tractograms) > 1:
             print('\tTractogram: {}'.format(filename))
         else:
             print('\tSurface: {}'.format(filename))

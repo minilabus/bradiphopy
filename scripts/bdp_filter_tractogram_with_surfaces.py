@@ -43,12 +43,12 @@ def _build_arg_parser():
                    help='Path of the output tractogram file.')
 
     p.add_argument('--individual_surface', nargs='+', action='append',
-                   help="ROI_NAME MODE CRITERIA DISTANCE "
-                        "(distance in mm is optional)\n"
-                        "Filename of a surface to use as a ROI.")
+                   help='ROI_NAME MODE CRITERIA DISTANCE '
+                        '(distance in mm is optional)\n'
+                        'Filename of a surface to use as a ROI.')
     p.add_argument('--reuse_matched_pts', action='store_true',
-                   help="Do not reuse already matched points when"
-                   "filtering with multiple surfaces.")
+                   help='Reuse already matched points when '
+                        'filtering with multiple surfaces.')
     return p
 
 
@@ -62,7 +62,7 @@ def main():
         raise ValueError("At least one ROI must be provided.")
 
     sft = load_tractogram(args.in_tractogram, 'same')
-    matched_pts = np.zeros(len(sft.streamlines._data), dtype=bool)
+    matched_pts = np.zeros(len(sft.streamlines._data), dtype=bool) 
 
     for surf_opt in args.individual_surface:
         indices = np.arange(len(sft))
@@ -89,12 +89,13 @@ def main():
         if len(indices) != 0:
             # Use the ArraySequence slicing to keep the matched_points
             arr_seq = sft.streamlines.copy()
-            arr_seq._data = matched_pts
-            matched_pts = arr_seq[indices].copy()._data
+            if not args.reuse_matched_pts:
+                arr_seq._data = matched_pts
+                matched_pts = arr_seq[indices].copy()._data
             sft = sft[indices]
 
         else:
-            sft = StatefulTractogram([], sft, Space.RASMM)
+            sft = StatefulTractogram.from_sft([], sft)
 
     save_tractogram(sft, args.out_tractogram, bbox_valid_check=False)
 

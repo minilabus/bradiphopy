@@ -132,8 +132,12 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
         np.round(src_bbox[:, 1], 4),
         np.round(src_bbox[:, 2], 4)))
 
-    min_condition = np.min(tgt_vertices-src_bbox[0]*1.1, axis=1) > 0
-    max_condition = np.max(tgt_vertices-src_bbox[1]*1.1, axis=1) < 0
+    # Extend the bbox by the max_distance per axis to make sure
+    # we get all the vertices
+    src_bbox[0] -= max_dist
+    src_bbox[1] += max_dist
+    min_condition = np.min(tgt_vertices - src_bbox[0], axis=1) > 0
+    max_condition = np.max(tgt_vertices - src_bbox[1], axis=1) < 0
     bbox_in_indices = np.where(np.logical_and(min_condition,
                                               max_condition))[0]
 
