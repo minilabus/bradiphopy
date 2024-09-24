@@ -20,8 +20,9 @@ or excluded from the output tractogram.
 """
 
 import argparse
+import os
 
-from dipy.io.stateful_tractogram import StatefulTractogram, Space
+from dipy.io.stateful_tractogram import StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 import numpy as np
 
@@ -49,12 +50,18 @@ def _build_arg_parser():
     p.add_argument('--reuse_matched_pts', action='store_true',
                    help='Reuse already matched points when '
                         'filtering with multiple surfaces.')
+    p.add_argument('-f', dest='overwrite', action='store_true',
+                help='Force overwriting of the output files.')
     return p
 
 
 def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
+
+    if os.path.isfile(args.out_tractogram) and not args.overwrite:
+        raise ValueError(f"{args.out_tractogram} already exists. Use -f to '
+                         'overwrite.")
 
     min_arg = 0 if args.individual_surface is None else len(
         args.individual_surface)

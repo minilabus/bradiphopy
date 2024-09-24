@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-Script to compute matching scores between tractography bundles and atlas labels
-using endpoint distance maps.
+Script to compute matching scores between tractography bundles and labels
+using a distances between all endpoints and all labels.
 
 This can be used to match bundles to stimulation targets in the brain for
 example. We recommand spliting your endpoints into head and tail yourself,
 an easy way to do this is to multiply your target mask by a Freesurfer
 parcellation and use the resulting image as input.
+
+WARNING: WIP
 """
 
 import argparse
@@ -29,7 +31,7 @@ def _build_arg_parser():
     """
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('in_endpoints',
+    parser.add_argument('in_labels',
                         help='Input atlas endpoints image.')
     parser.add_argument('in_bundles', nargs='+',
                         help='Input tractography bundle files.')
@@ -41,7 +43,7 @@ def main():
     args = parser.parse_args()
 
     # Load atlas endpoints image
-    atlas_img = nib.load(args.in_endpoints)
+    atlas_img = nib.load(args.in_labels)
     atlas_data = atlas_img.get_fdata()
 
     # Create binary mask of the atlas

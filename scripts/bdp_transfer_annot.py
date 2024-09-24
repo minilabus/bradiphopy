@@ -2,14 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-Transfer annotation from PC to mesh using a LUT
+Transfer annotation from PC to mesh using a LUT.
+
+Only useful to generate data for the BraDiPho website.
 """
 
 import argparse
 import os
 import numpy as np
 
-from bradiphopy.io import load_polydata, save_polydata
+from bradiphopy.io import load_polydata
 from bradiphopy.bdp_ops import transfer_annots
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
 

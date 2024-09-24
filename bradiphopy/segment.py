@@ -1,6 +1,5 @@
 
 import numpy as np
-from scilpy.tractograms.streamline_operations import generate_matched_points
 
 from scipy.spatial import KDTree
 from scilpy.tractograms.streamline_operations import resample_streamlines_num_points
