@@ -35,6 +35,9 @@ def _build_arg_parser():
                         help='Input atlas endpoints image.')
     parser.add_argument('in_bundles', nargs='+',
                         help='Input tractography bundle files.')
+    parser.add_argument('--max_distance', default=np.inf,
+                        help='Maximum distance in mm to consider a match.\n'
+                             'Default: Infinite.')
     return parser
 
 
@@ -70,9 +73,11 @@ def main():
     scores = np.zeros((len(endpoints), len(labels)), dtype=float)
 
     # Compute scores between each endpoint mask and atlas labels
+    if args.max_distance is None:
+        args.max_distance = np.inf
     for i, endpoint in enumerate(endpoints):
         distance_map = compute_distance_map(endpoint, atlas_binary,
-                                            max_distance=10,
+                                            max_distance=args.max_distance,
                                             symmetric=True)
 
         for j, label in enumerate(labels):
