@@ -7,10 +7,11 @@ using a distances between all endpoints and all labels.
 
 This can be used to match bundles to stimulation targets in the brain for
 example. We recommand spliting your endpoints into head and tail yourself,
-an easy way to do this is to multiply your target mask by a Freesurfer
+an easy way to do this is to multiply your target mask by a Lobe
 parcellation and use the resulting image as input.
 
-WARNING: WIP
+The script will output a pseudocore for each bundle, showing the labels
+that are the most covered by the closest endpoints.
 """
 
 import argparse
@@ -29,16 +30,19 @@ def _build_arg_parser():
     """
     Build and return the argument parser.
     """
-    parser = argparse.ArgumentParser(
+    p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('in_labels',
-                        help='Input atlas endpoints image.')
-    parser.add_argument('in_bundles', nargs='+',
-                        help='Input tractography bundle files.')
-    parser.add_argument('--max_distance', default=np.inf,
-                        help='Maximum distance in mm to consider a match.\n'
-                             'Default: Infinite.')
-    return parser
+    p.add_argument('in_labels',
+                   help='Input atlas endpoints image.')
+    p.add_argument('in_bundles', nargs='+',
+                   help='Input tractography bundle files.')
+
+    p.add_argument('--max_distance', type=float, default=5,
+                   help='Maximum distance to consider a streamline as part of '
+                   'a surface.')
+    p.add_argument('--show_top', type=int, const=5, nargs='?',
+                   help='Number of top matches to show.')
+    return p
 
 
 def main():
@@ -46,15 +50,15 @@ def main():
     args = parser.parse_args()
 
     # Load atlas endpoints image
-    atlas_img = nib.load(args.in_labels)
-    atlas_data = atlas_img.get_fdata()
+    labels_img = nib.load(args.in_labels)
+    labels_data = labels_img.get_fdata()
 
     # Create binary mask of the atlas
-    atlas_binary = np.zeros_like(atlas_data)
-    atlas_binary[atlas_data > 0] = 1
+    labels_binary = np.zeros_like(labels_data)
+    labels_binary[labels_data > 0] = 1
 
     # Get unique labels in the atlas (excluding background)
-    labels = np.unique(atlas_data)
+    labels = np.unique(labels_data)
     labels = labels[labels != 0].astype(int)
 
     endpoints = []
@@ -64,7 +68,7 @@ def main():
 
         # Get head and tail density maps & create endpoints mask
         head, tail = get_head_tail_density_maps(sft)
-        endpoints_mask = np.zeros_like(atlas_data)
+        endpoints_mask = np.zeros_like(labels_data)
         endpoints_mask[head > 0] = 1
         endpoints_mask[tail > 0] = 1
         endpoints.append(endpoints_mask)
@@ -76,31 +80,49 @@ def main():
     if args.max_distance is None:
         args.max_distance = np.inf
     for i, endpoint in enumerate(endpoints):
-        distance_map = compute_distance_map(endpoint, atlas_binary,
+        distance_map = compute_distance_map(endpoint, labels_binary,
                                             max_distance=args.max_distance,
                                             symmetric=True)
 
         for j, label in enumerate(labels):
             curr_distance_map = distance_map.copy()
-            curr_distance_map = np.where((endpoint == 0) & (atlas_data == 0),
+            curr_distance_map = np.where((endpoint == 0) & (labels_data == 0),
                                          np.inf, curr_distance_map)
-            curr_distance_map[atlas_data != label] = np.inf
+            curr_distance_map = np.where((labels_data != label) & (labels_data != 0),
+                                         np.inf, curr_distance_map)
 
-            # Compute sum of exponential negative distances
-            sum_dist = np.exp(-curr_distance_map)
-            sum_dist = np.sum(sum_dist)
-            scores[i, j] = sum_dist
+            # curr_distance_map[] = np.inf
+            curr_bin_atlas = np.zeros_like(labels_data)
+            curr_bin_atlas[labels_data == label] = 1
+
+            covered_endpoints = np.sum(
+                endpoint[~np.isinf(curr_distance_map)]) / np.sum(endpoint)
+            covered_atlas = np.sum(curr_bin_atlas[~np.isinf(
+                curr_distance_map)]) / np.sum(curr_bin_atlas)
+
+            non_overlap_factor = min(covered_atlas, covered_endpoints)
+
+            if non_overlap_factor == 0:
+                scores[i, j] = 0
+            else:
+                sum_dist = np.exp(-1 * curr_distance_map /
+                                  (non_overlap_factor ** 2))
+                sum_dist = np.sum(sum_dist)
+                scores[i, j] = sum_dist
 
     # Compute cost matrix by summing scores for each bundle
-    scores[scores < 1e-3] -= np.mean(scores[scores > 1e-3])
+    scores[scores > 1e-3] = np.log(scores[scores > 1e-3]) ** 2
     scores = scores.astype(int)
     cost_matrix = np.sum(scores, axis=1)
     indices = np.argsort(cost_matrix)
 
+    if args.show_top:
+        indices = indices[-args.show_top:]
+
     np.set_printoptions(suppress=True)
     for ind in indices:
         print(f'Bundle: {args.in_bundles[ind]}, Cost: {cost_matrix[ind]}')
-        print(f'Labels: {labels}, Scores: {scores[ind, :]}')
+        print(f'Labels: {labels}, Scores: {np.round(scores[ind, :], 3)}')
         print()
 
 
