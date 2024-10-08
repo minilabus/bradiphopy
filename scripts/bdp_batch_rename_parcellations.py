@@ -2,7 +2,20 @@
 # -*- coding: utf-8 -*-
 
 """
+Change the names of files in a directory based on a JSON file.
 
+The script will automatically check if the input directory contains the files
+with the old (or new) names. If the old name is found, it will be copied to the
+output directory with the new name as specified in the JSON file. If the new
+name is found, it will be copied to the output directory with the old name as
+specified in the JSON file (a swap operation).
+
+The JSON file should have the following format:
+{
+    "old_name1": "new_name1",
+    "old_name2": "new_name2",
+    ...
+}
 """
 
 import argparse

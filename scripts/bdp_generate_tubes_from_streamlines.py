@@ -6,11 +6,11 @@ Script to generate tubes from tractography files.
 Generate files around 500Mb for 10k-20k streamlines.
 
 If generating for MI-Brain use TRK (that align with NIFTI) as input and PLY as
-output. If generating for CloudCompare use VTK (from bdp_scale_file.py) as
-input and PLY output.
+output.
 
-Only PLY file will have visible streamlines in CloudCompare.
-MI-Brain does not support coloring of surfaces (when loading).
+If you want to visualize in CloudCompare, use the following script:
+bdp_scale_tractography_file.py
+This will scale your TRK to PLY as well as scale the results in one step.
 """
 
 

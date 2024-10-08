@@ -4,6 +4,7 @@
 """
 Convert surface to NIFTI file.
 Must be aligned with the reference NIFTI file in MI-Brain.
+To get it aligned FROM CloudCompare, use: --scaling 1000 and --to_lps
 """
 
 import argparse

@@ -5,7 +5,6 @@
 Convert PolyData from and to any of these extensions:
     [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
 
-Only PLY file will have visible streamlines in CloudCompare.
 MI-Brain does not support coloring of surfaces (when loading).
 """
 

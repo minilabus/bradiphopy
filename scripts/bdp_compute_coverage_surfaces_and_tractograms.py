@@ -3,7 +3,8 @@
 
 """
 Compute the coverage of a tractogram to surfaces or the coverage of surfaces
-to a tractogram.
+to a tractogram. It is one or the other, not both. N tractograms to 1 surface
+or 1 tractogram to N surfaces.
 
 The coverage is defined as the proportion of streamlines that are close to a
 surface or the proportion of surface points that are close to a streamline.

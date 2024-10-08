@@ -17,6 +17,10 @@ The mode defines how the proximity is computed:
 
 The criteria defines if the streamlines close to the surface should be included
 or excluded from the output tractogram.
+
+--reuse_matched_pts can be used to reuse the matched points when filtering.
+Since we are using a distance the same points can respect more than one
+condition.
 """
 
 import argparse

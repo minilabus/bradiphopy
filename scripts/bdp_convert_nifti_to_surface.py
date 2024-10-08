@@ -3,7 +3,7 @@
 
 """
 Convert NIFTI to surface, by default in RAS coordinates for MI-Brain.
-To get it ready for CloudCompare, use: --scaling 0.001 and --to_lps
+To get it ready FOR CloudCompare, use: --scaling 0.001 and --to_lps
 """
 
 import math

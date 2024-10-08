@@ -4,6 +4,11 @@
 """
 Colorize PolyData from and to any of these extensions:
     [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
+
+The script will colorize by modifying the Hue of the HSV color space.
+The saturation and value can be modified with the --saturation_target,
+--saturation_multiplier, --value_target, and --value_multiplier options.
+(this is to control the obtained color, since every scene/epoch is different)
 """
 
 import argparse

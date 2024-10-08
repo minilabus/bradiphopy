@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
+Harmonize the luminance of a set of images from photometric scene.
+Will balance the luminance of the images to the average luminance of the set
+using a simple linear transformation of the HSV space.
 """
 
 import argparse
-import colorsys
 import os
 import shutil
 
@@ -13,18 +15,14 @@ import imageio.v2 as imageio
 import matplotlib
 import numpy as np
 
-from bradiphopy.bradipho_helper import BraDiPhoHelper3D
-from bradiphopy.io import load_polydata, save_polydata
-from bradiphopy.utils import get_colormap
-
 
 def _build_arg_parser():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_files', nargs='+',
-                   help='Input filename (must be supported by VTK).')
+                   help='Input filenames (.jpg or .png).')
     p.add_argument('out_dir',
-                   help='Output filename (must be supported by VTK).')
+                   help='Output directory for balanced images.')
     p.add_argument('-f', dest='overwrite', action='store_true',
                    help='Force overwriting of the output files.')
     return p
