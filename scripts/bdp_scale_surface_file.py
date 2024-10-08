@@ -5,8 +5,9 @@
 Convert PolyData from and to any of these extensions:
     [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
 
-Only PLY file will have visible streamlines in CloudCompare.
-MI-Brain does not support coloring of surfaces (when loading).
+Useful to switch between space CloudCompare and MI-Brain.
+CloudCompare is in meters, MI-Brain is in millimeters (so --scaling 1000) will
+convert a surface from CloudCompare to MI-Brain (and --to_lps will flip it).
 """
 
 import argparse

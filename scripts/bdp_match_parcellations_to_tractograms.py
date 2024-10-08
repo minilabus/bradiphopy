@@ -7,7 +7,8 @@ tractogram. The connectivity matrix is built by computing the distance of each
 streamline to the surfaces and assigning it to the closest one. The output is a
 set of tractograms, one for each pair of surfaces.
 
-WARNING: WIP
+Support multiple tractograms to avoid concatenating them. Multiple surfaces are
+required to build the connectivity matrix.
 """
 
 import argparse

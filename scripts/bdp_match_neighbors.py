@@ -3,6 +3,11 @@
 
 """
 Match neighbors from one point_cloud to another.
+
+Support multiple source files to match to a single target file. This is useful
+when you have multiple annotations that you want to transfer information to
+another surface.
+
 Works better the closer the two files are in space.
 """
 

@@ -39,7 +39,7 @@ def _build_arg_parser():
                                 description=__doc__)
 
     p.add_argument('in_files', nargs='+',
-                   help='Path of the input surface and tractogram files.')
+                   help='Path of the input surfaces and tractogram files.')
     p.add_argument('out_json',
                    help='Path of the output json file.')
 
