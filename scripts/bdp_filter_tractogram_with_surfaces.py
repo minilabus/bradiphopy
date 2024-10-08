@@ -51,7 +51,7 @@ def _build_arg_parser():
                    help='Reuse already matched points when '
                         'filtering with multiple surfaces.')
     p.add_argument('-f', dest='overwrite', action='store_true',
-                help='Force overwriting of the output files.')
+                   help='Force overwriting of the output files.')
     return p
 
 
@@ -60,8 +60,8 @@ def main():
     args = parser.parse_args()
 
     if os.path.isfile(args.out_tractogram) and not args.overwrite:
-        raise ValueError(f"{args.out_tractogram} already exists. Use -f to '
-                         'overwrite.")
+        raise ValueError(f"{args.out_tractogram} already exists. Use -f to "
+                         "overwrite.")
 
     min_arg = 0 if args.individual_surface is None else len(
         args.individual_surface)
@@ -69,7 +69,7 @@ def main():
         raise ValueError("At least one ROI must be provided.")
 
     sft = load_tractogram(args.in_tractogram, 'same')
-    matched_pts = np.zeros(len(sft.streamlines._data), dtype=bool) 
+    matched_pts = np.zeros(len(sft.streamlines._data), dtype=bool)
 
     for surf_opt in args.individual_surface:
         indices = np.arange(len(sft))

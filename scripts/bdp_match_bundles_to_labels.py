@@ -7,10 +7,11 @@ using a distances between all endpoints and all labels.
 
 This can be used to match bundles to stimulation targets in the brain for
 example. We recommand spliting your endpoints into head and tail yourself,
-an easy way to do this is to multiply your target mask by a Freesurfer
+an easy way to do this is to multiply your target mask by a Lobe
 parcellation and use the resulting image as input.
 
-WARNING: WIP
+The script will output a pseudocore for each bundle, showing the labels
+that are the most covered by the closest endpoints.
 """
 
 import argparse
@@ -76,6 +77,8 @@ def main():
     scores = np.zeros((len(endpoints), len(labels)), dtype=float)
 
     # Compute scores between each endpoint mask and atlas labels
+    if args.max_distance is None:
+        args.max_distance = np.inf
     for i, endpoint in enumerate(endpoints):
         distance_map = compute_distance_map(endpoint, labels_binary,
                                             max_distance=args.max_distance,
