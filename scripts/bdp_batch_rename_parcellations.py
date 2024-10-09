@@ -34,7 +34,7 @@ def _build_arg_parser():
     p.add_argument('out_dir',
                    help='Output directory.')
     p.add_argument('--extention', default='ply',
-                   help='File extention to use[%(default)s].')
+                   help='File extention to use [%(default)s].')
     p.add_argument('-f', dest='overwrite', action='store_true',
                    help='Force overwriting of the output files.')
     return p

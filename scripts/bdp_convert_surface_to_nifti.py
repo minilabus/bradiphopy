@@ -51,6 +51,10 @@ def main():
     vertices = vertices.astype(int)
 
     density = np.zeros(ref_img.shape)
+
+    # Remove vertices outside the image
+    vertices = vertices[(vertices >= 0).all(axis=1)]
+    vertices = vertices[(vertices < np.array(ref_img.shape)).all(axis=1)]
     density[vertices[:, 0], vertices[:, 1], vertices[:, 2]] = 1
 
     nib.save(nib.Nifti1Image(density, ref_img.affine), args.out_file)

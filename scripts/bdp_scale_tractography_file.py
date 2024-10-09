@@ -68,6 +68,7 @@ def main():
         args.in_file = 'tmp.vtk'
     else:
         polydata = load_polydata(args.in_file)
+
     transform = vtk.vtkTransform()
     transform.Scale([args.scaling]*3)
 

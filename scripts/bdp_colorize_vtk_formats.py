@@ -48,17 +48,17 @@ def _build_arg_parser():
     s = p.add_mutually_exclusive_group()
     s.add_argument('--saturation_target', type=float, const=0.6, nargs='?',
                    help='Target saturation. Must be lower than 1.0\n'
-                        'Lower = Move toward white, gray, black.')
+                        'Lower = Move toward white, gray, black [%(default)s].')
     s.add_argument('--saturation_multiplier', type=float, const=1.0, nargs='?',
                    help='Saturation multiplier. Must be lower than 1.0\n'
-                        'Lower = Move toward white, gray, black.')
+                        'Lower = Move toward white, gray, black [%(default)s].')
     v = p.add_mutually_exclusive_group()
     v.add_argument('--value_target', type=float, const=160, nargs='?',
                    help='Target value. Must be lower than 255\n'
-                        'Should be around 100-192.')
+                        'Should be around 100-192 [%(default)s].')
     v.add_argument('--value_multiplier', type=float, const=1.8, nargs='?',
                    help='Value multiplier. Higher = More intense color\n'
-                        'Should be around 1.25-2.0.')
+                        'Should be around 1.25-2.0 [%(default)s].')
     p.add_argument('--ascii', action='store_true',
                    help='Save the file with data as ASCII '
                         '(instead of binary).')

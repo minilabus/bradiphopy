@@ -37,7 +37,7 @@ def _build_arg_parser():
                    help='Save a point cloud instead of a mesh.')
     p.add_argument('--sampling_distance', type=int, default=0.0001,
                    help='Distance between point for sampling the mesh '
-                   '[%(default)s].')
+                        '[%(default)s].')
     p.add_argument('--dilate', type=int, default=0,
                    help='Number of dilation iterations [%(default)s].')
 

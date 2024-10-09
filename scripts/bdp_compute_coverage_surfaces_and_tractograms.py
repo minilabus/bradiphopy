@@ -45,7 +45,7 @@ def _build_arg_parser():
 
     p.add_argument('--max_distance', type=float, default=5,
                    help='Maximum distance to consider a streamline as '
-                        'close to a surface. Default: 5.')
+                        'close to a surface [%(default)s].')
     p.add_argument('--endpoints_only', action='store_true',
                    help='Consider only the endpoints of the streamlines '
                         'to compute the proximity scores.')

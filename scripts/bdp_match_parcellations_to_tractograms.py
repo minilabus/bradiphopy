@@ -34,14 +34,16 @@ def _build_arg_parser():
                    help='A list of surfaces.')
     p.add_argument('out_dir',
                    help='Output directory.')  # TODO optional, use .h5 by default
-    p.add_argument('--in_annotation',
-                   help='Input annotation file only works with one '
-                        'surface.')
+    # p.add_argument('--in_annotation',
+    #                help='Input annotation file only works with one '
+    #                     'surface.')
     p.add_argument('--max_distance', type=float, default=5,
                    help='Maximum distance to consider a streamline as part of '
-                        'a surface.')
+                        'a surface [%(default)s].')
     p.add_argument('--keep_original_filename', action='store_true',
                    help='Keep the original filename of the surfaces.')
+    p.add_argument('--save_empty', action='store_true',
+                   help='Save empty tractograms.')
     p.add_argument('-f', dest='overwrite', action='store_true',
                    help='Force overwriting of the output files.')
     return p
@@ -128,6 +130,9 @@ def main():
         if i > j:
             j, i = i, j
 
+        if len(indices) == 0 and not args.save_empty:
+            continue
+
         # Use labels to save the tractograms (easier for users)
         if args.keep_original_filename:
             basename_1 = os.path.splitext(os.path.basename(in_surfaces[i]))[0]
@@ -135,7 +140,8 @@ def main():
             save_tractogram(sft[indices], os.path.join(
                 args.out_dir, f'{basename_1}_{basename_2}.trk'))
         else:
-            save_tractogram(sft[indices], f'{i}_{j}.trk')
+            save_tractogram(sft[indices], os.path.join(
+                args.out_dir, f'{i}_{j}.trk'))
 
         # TODO generated .h5
         # TODO Save bundle only if asked

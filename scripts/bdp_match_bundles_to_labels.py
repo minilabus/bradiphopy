@@ -39,9 +39,9 @@ def _build_arg_parser():
 
     p.add_argument('--max_distance', type=float, default=5,
                    help='Maximum distance to consider a streamline as part of '
-                   'a surface.')
+                        'a surface [%(default)s].')
     p.add_argument('--show_top', type=int, const=5, nargs='?',
-                   help='Number of top matches to show.')
+                   help='Number of top matches to show [%(default)s].')
     return p
 
 

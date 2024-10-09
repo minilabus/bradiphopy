@@ -8,9 +8,14 @@ Generate files around 500Mb for 10k-20k streamlines.
 If generating for MI-Brain use TRK (that align with NIFTI) as input and PLY as
 output.
 
-If you want to visualize in CloudCompare, use the following script:
-bdp_scale_tractography_file.py
-This will scale your TRK to PLY as well as scale the results in one step.
+If you want to visualize in CloudCompare, you have two choices:
+Use the following script with the output tubes:
+    bdp_scale_surface.py - This will scale your PLY.
+
+Use the following script with your streamlines (as TRK/TCK):
+    bdp_scale_tractography_file.py - This will scale your TRK/TCK.
+Then call this script with the scaled TRK/TCK as input:
+    bdp_generate_tubes_from_streamlines.py - This will generate tubes.
 """
 
 
@@ -45,7 +50,8 @@ def _build_arg_parser():
 
     p.add_argument('--tol_error', type=float, default=0.0001,
                    help='Tolerance error for the compression of the streamlines.'
-                        'Around 0.1mm (divide by 1000 if in photogrammetry space)')
+                        'Around 0.1mm is NIFTI space.\n'
+                        'Default is 0.0001mm, for photogrammetry space.')
     p.add_argument('--reference', default='same',
                    help='Reference image for the output file.')
 
