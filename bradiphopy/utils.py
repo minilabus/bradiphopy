@@ -89,9 +89,6 @@ def create_mesh_from_image(img, dilate=0, threshold=0.5):
                                                    array_type=vtk.VTK_DOUBLE)
     image = vtk.vtkImageData()
 
-    # Set the spacing, origin, and direction from the affine matrix
-    image.SetSpacing(VOX_SIZE)
-
     # Adjust for voxel centering
     voxel_half = np.array(VOX_SIZE) / 2.0
     adjusted_origin = AFFINE[:3, 3] + np.dot(AFFINE[:3, :3], voxel_half)

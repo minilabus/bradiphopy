@@ -15,10 +15,9 @@ import numpy as np
 import vtk
 
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
-from bradiphopy.io import load_polydata, save_polydata
+from bradiphopy.io import save_polydata
 from bradiphopy.utils import create_mesh_from_image, sample_mesh_to_point_cloud
 import nibabel as nib
-from nibabel.affines import apply_affine
 
 
 def _build_arg_parser():
