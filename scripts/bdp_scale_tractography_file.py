@@ -63,9 +63,9 @@ def main():
                               bbox_valid_check=False)
         sft.streamlines._data = sft.streamlines._data
         polydata = lines_to_vtk_polydata(sft.streamlines)
-        save_tractogram(sft, 'tmp.vtk',
+        save_tractogram(sft, '.tmp.vtk',
                         bbox_valid_check=False)
-        args.in_file = 'tmp.vtk'
+        args.in_file = '.tmp.vtk'
     else:
         polydata = load_polydata(args.in_file)
 
@@ -89,8 +89,8 @@ def main():
     else:
         save_polydata(transformFilter.GetOutput(), args.out_file,
                       ascii=args.ascii)
-    if os.path.isfile('tmp.vtk'):
-        os.remove('tmp.vtk')
+    if os.path.isfile('.tmp.vtk'):
+        os.remove('.tmp.vtk')
 
 
 if __name__ == '__main__':
