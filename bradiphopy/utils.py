@@ -72,10 +72,8 @@ def create_mesh_from_image(img, dilate=0, threshold=0.5):
     vtkPolyData: Generated mesh as vtkPolyData.
     """
     data = img.get_fdata()
-    data = np.rot90(data, k=3, axes=(0, 2))
-    data = np.flip(data, axis=1)
-    affine = img.affine
-    vox_sizes = img.header.get_zooms()[0:3]
+    VOX_SIZE = img.header.get_zooms()
+    AFFINE = img.affine
 
     percentiles = np.percentile(data[data > 0], [1, 99])
     data[data < percentiles[0]] = 0
@@ -83,23 +81,27 @@ def create_mesh_from_image(img, dilate=0, threshold=0.5):
     data[data > 0] = 1
     if dilate > 0:
         data = binary_dilation(data, iterations=dilate)
-    data = gaussian_filter(data, sigma=0.1)
+    data = gaussian_filter(data, sigma=1)
 
     # Convert numpy array to VTK image data
-    vtk_data = vtk.util.numpy_support.numpy_to_vtk(num_array=data.ravel(),
+    vtk_data = vtk.util.numpy_support.numpy_to_vtk(num_array=data.ravel(order='F'),
                                                    deep=True,
-                                                   array_type=vtk.VTK_UNSIGNED_CHAR)
+                                                   array_type=vtk.VTK_DOUBLE)
     image = vtk.vtkImageData()
 
     # Set the spacing, origin, and direction from the affine matrix
-    offsets = (2 * affine[1, 3]) + (data.shape[1] * vox_sizes[1])
-    image.SetSpacing(vox_sizes)
+    image.SetSpacing(VOX_SIZE)
 
-    image.SetOrigin(affine[:3, 3] - np.array([0, offsets-1, 0]))
+    # Adjust for voxel centering
+    voxel_half = np.array(VOX_SIZE) / 2.0
+    adjusted_origin = AFFINE[:3, 3] + np.dot(AFFINE[:3, :3], voxel_half)
+    image.SetOrigin(adjusted_origin)
+
+    # Set the spatial transformation matrix
     direction_matrix = vtk.vtkMatrix3x3()
     for i in range(3):
         for j in range(3):
-            direction_matrix.SetElement(i, j, affine[i, j])
+            direction_matrix.SetElement(i, j, AFFINE[i, j])
     image.SetDirectionMatrix(direction_matrix)
 
     image.SetDimensions(data.shape)
@@ -111,17 +113,19 @@ def create_mesh_from_image(img, dilate=0, threshold=0.5):
     marching_cubes.SetValue(0, threshold)
     marching_cubes.Update()
 
-    # Apply a smoothing filter
-    # smoother = vtk.vtkWindowedSincPolyDataFilter()
-    # smoother.SetInputData(marching_cubes.GetOutput())
-    # smoother.SetNumberOfIterations(2)
-    # smoother.SetPassBand(0.1)
-    # smoother.NonManifoldSmoothingOn()
-    # smoother.NormalizeCoordinatesOn()
-    # smoother.Update()
+    transform = vtk.vtkTransform()
+    flip_LPS = vtk.vtkMatrix4x4()
+    flip_LPS.Identity()
+    flip_LPS.SetElement(0, 0, -1)
+    flip_LPS.SetElement(1, 1, -1)
+    transform.Concatenate(flip_LPS)
 
-    # Return the transformed vtkPolyData
-    return marching_cubes.GetOutput()
+    transformFilter = vtk.vtkTransformPolyDataFilter()
+    transformFilter.SetInputData(marching_cubes.GetOutput())
+    transformFilter.SetTransform(transform)
+    transformFilter.Update()
+
+    return transformFilter.GetOutput()
 
 
 def sample_mesh_to_point_cloud(mesh, sampling_distance):

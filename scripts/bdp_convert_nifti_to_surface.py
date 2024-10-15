@@ -30,7 +30,7 @@ def _build_arg_parser():
                    help='Output filename (.ply).')
 
     p.add_argument('--scaling', type=float, default=1.0,
-                   help='Scaling factor to apply to the streamlines [%(default)s].')
+                   help='Scaling factor to apply to the surface [%(default)s].')
     p.add_argument('--to_lps', action='store_true',
                    help='Flip for Surfice/MI-Brain LPS')
     p.add_argument('--save_point_cloud', action='store_true',
