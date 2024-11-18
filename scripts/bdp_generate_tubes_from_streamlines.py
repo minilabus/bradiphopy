@@ -48,6 +48,8 @@ def _build_arg_parser():
                    help='Save the file with data as ASCII '
                         '(instead of binary).')
 
+    p.add_argument('--scaling', type=float, default=1.0,
+                   help='Scaling factor to apply to the streamlines [%(default)s].')
     p.add_argument('--tol_error', type=float, default=0.0001,
                    help='Tolerance error for the compression of the streamlines.'
                         'Around 0.1mm is NIFTI space.\n'
@@ -105,9 +107,10 @@ def main():
     if ext != '.ply':
         raise ValueError('Output file must be a .ply file to support color.')
 
-    aff = np.eye(3)
-    aff[0, 0] = -1
-    aff[1, 1] = -1
+    aff = np.eye(3) * args.scaling
+    if ext in ['.trk', '.tck']:
+        aff[0, 0] *= -1
+        aff[1, 1] *= -1
 
     sft = compress_sft(load_tractogram(args.in_bundle, args.reference),
                        tol_error=args.tol_error)
