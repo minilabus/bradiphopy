@@ -25,6 +25,19 @@ from bradiphopy.utils import get_colormap
 
 
 def _build_arg_parser():
+    """Builds and returns an argparse.ArgumentParser for this script.
+
+    The parser is configured with arguments for an input file, an output
+    file, and a mutually exclusive group for colorization method (single
+    RGB color, colormap by axis, or a JSON color LUT). It also includes
+    options for selecting the axis for colormapping, and parameters to
+    manipulate saturation and value in HSV space. Finally, it has flags
+    for ASCII output and overwriting existing files. The script's
+    module-level docstring is used as the description.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_file',
@@ -68,6 +81,19 @@ def _build_arg_parser():
 
 
 def main():
+    """Main function to execute the VTK format colorization script.
+
+    Parses command-line arguments. Loads the input polydata file.
+    Determines the colorization strategy based on user input:
+    - If a specific RGB --color is provided, it's applied.
+    - If --cLUT is given, it attempts to find the input file's basename
+      in the JSON LUT and apply the corresponding color.
+    - If --colormap is specified, colors are applied based on vertex
+      coordinates along a chosen --axis (or auto-detected axis).
+    The script then applies optional saturation and value adjustments in
+    HSV color space to the determined RGB colors. Finally, the colorized
+    polydata (with an 'RGB' scalar array) is saved to the output .ply file.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 

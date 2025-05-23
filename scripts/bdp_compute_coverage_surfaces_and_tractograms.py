@@ -35,6 +35,21 @@ CRITERIA = ['include', 'exclude']
 
 
 def _build_arg_parser():
+    """Builds and returns an argparse.ArgumentParser for this script.
+
+    The parser is configured with arguments for:
+    - Input surface(s) and tractogram(s) files.
+    - Output JSON file path for storing all computed scores.
+    - Maximum distance for proximity calculation.
+    - A flag to consider only streamline endpoints.
+    - An optional output directory for creating symlinks to top results.
+    - A mutually exclusive group to either print the top N scoring files
+      or the files belonging to the best cluster based on scores.
+    The script's module-level docstring is used as the description.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     p = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
                                 description=__doc__)
 
@@ -62,6 +77,17 @@ def _build_arg_parser():
 
 
 def main():
+    """Main function to compute and report surface-tractogram coverage.
+
+    Parses arguments, then validates that inputs consist of either multiple
+    surfaces and one tractogram, or multiple tractograms and one surface.
+    It iterates through the relevant pairs, calling `get_proximity_scores`
+    to calculate surface coverage and streamline coverage.
+    Results are stored and then optionally filtered to identify top-performing
+    files (either top N or best cluster) which are printed to console.
+    If an output directory is specified, symlinks are created for these
+    top files. All computed scores are saved to the specified output JSON file.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
     in_tractograms = [f for f in args.in_files if os.path.splitext(f)[

@@ -25,6 +25,15 @@ import shutil
 
 
 def _build_arg_parser():
+    """Builds and returns an argparse.ArgumentParser for this script.
+
+    The parser is configured with arguments for input directory, input JSON
+    mapping file, output directory, file extension, and an overwrite flag.
+    The script's module-level docstring is used as the description.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_dir',
@@ -41,6 +50,15 @@ def _build_arg_parser():
 
 
 def main():
+    """Main function to execute the batch renaming script.
+
+    Parses command-line arguments, reads the JSON file containing old/new
+    name mappings. It then checks the input directory to determine if
+    files are named according to 'old_names' or 'new_names' from the JSON
+    map. Based on this, it copies files from the input directory to the
+    output directory, renaming them to the corresponding 'new_name' or
+    'old_name' respectively.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 

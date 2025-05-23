@@ -34,6 +34,24 @@ NB_SIDE = 6
 
 
 def _build_arg_parser():
+    """Builds and returns an argparse.ArgumentParser for this script.
+
+    The parser is configured with arguments for:
+    - Input bundle file (.trk or .tck).
+    - Radius for the generated tubes (in mm).
+    - Output filename for the tube mesh (.ply).
+    - Color options: either a fixed RGB color or a flag to keep
+      original streamline colors.
+    - A flag for saving the output file in ASCII format.
+    - Scaling factor to apply to streamline coordinates.
+    - Tolerance error for streamline compression (optional).
+    - Reference image for spatial orientation.
+    - An overwrite flag for existing output files.
+    The script's module-level docstring is used as the description.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_bundle',
@@ -67,6 +85,18 @@ def _build_arg_parser():
 
 
 def create_tubes(streamlines, radius):
+    """Generates a VTK PolyData representation of tubes around streamlines.
+
+    Args:
+        streamlines (list or ArraySequence): A list of NumPy arrays, where
+            each array represents the points of a streamline.
+        radius (float): The radius of the tubes to generate.
+
+    Returns:
+        vtk.vtkPolyData: A VTK PolyData object representing the mesh of
+            the generated tubes. The tubes have `NB_SIDE` (constant) sides
+            and capping is enabled.
+    """
     polydata = lines_to_vtk_polydata(streamlines)
 
     # Tube filter for the rendering with varying radii
@@ -81,6 +111,23 @@ def create_tubes(streamlines, radius):
 
 
 def main():
+    """Main function to generate a tube mesh from streamlines.
+
+    Parses command-line arguments. Loads the input tractogram (bundle file).
+    Optionally compresses the streamlines if a tolerance error is provided.
+    Applies a scaling factor to the streamline coordinates.
+    Generates a tube mesh around the processed streamlines using the
+    `create_tubes` function with the specified radius.
+    Ensures correct triangle orientation by recalculating normals.
+    Determines the color for the tubes:
+        - If `--keep_color` is specified and the input tractogram has
+          point color data, these colors are mapped to the tube vertices
+          using nearest neighbor interpolation.
+        - Otherwise, a fixed RGB color (defaulting to white) is applied.
+    The color information is set as an 'RGB' scalar array on the tube mesh.
+    Finally, the generated tube mesh is saved as a .ply file, optionally
+    in ASCII format.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 

@@ -17,6 +17,15 @@ import numpy as np
 
 
 def _build_arg_parser():
+    """Builds and returns an argparse.ArgumentParser for this script.
+
+    The parser is configured with arguments for input files, output directory,
+    and an overwrite flag. The script's module-level docstring is used as
+    the description for the parser.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_files', nargs='+',
@@ -29,6 +38,13 @@ def _build_arg_parser():
 
 
 def main():
+    """Main function to execute the luminance balancing script.
+
+    Parses command-line arguments, reads input images, calculates the
+    average luminance across all images, then adjusts each image's
+    luminance to match this average. The processed images are saved
+    to the specified output directory.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 

@@ -15,6 +15,18 @@ from bradiphopy.io import load_polydata, save_polydata
 
 
 def _build_arg_parser():
+    """Builds and returns an argparse.ArgumentParser for this script.
+
+    The parser is configured with arguments for:
+    - Input file (VTK-supported format).
+    - Output file (VTK-supported format).
+    - A flag for saving the output file in ASCII format.
+    - An overwrite flag for existing output files.
+    The script's module-level docstring is used as the description.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_file',
@@ -31,6 +43,13 @@ def _build_arg_parser():
 
 
 def main():
+    """Main function to convert between VTK-supported polydata formats.
+
+    Parses command-line arguments. Loads the polydata from the input file
+    using `bradiphopy.io.load_polydata`. Then, saves the loaded polydata
+    to the specified output file format using `bradiphopy.io.save_polydata`,
+    optionally in ASCII format.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 

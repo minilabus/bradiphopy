@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Functions to facilitate operations with surfaces and their additional data.
+This module provides a collection of operations for processing and manipulating
+3D surface data (often represented as `BraDiPhoHelper3D` objects) and point
+clouds. Functions include methods for transferring annotations, point set
+registration (ICP), finding neighboring points, and set operations on point
+clouds (intersection, union, difference).
 """
 
 from functools import reduce
@@ -19,8 +23,34 @@ from bradiphopy.bradipho_helper import BraDiPhoHelper3D
 
 def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=0.001,
                     filenames=None, annot_lut=None):
+    """
+    Transfer annotations from source objects to a target object.
 
-    if annot_lut:
+    Parameters
+    ----------
+    src_bdp_obj : list of BraDiPhoHelper3D
+        List of source objects from which to transfer annotations.
+    tgt_bdp_obj : BraDiPhoHelper3D
+        Target object to which annotations will be transferred.
+    distance : float, optional
+        Maximum distance to consider a point in `tgt_bdp_obj` close to
+        `src_bdp_obj` for annotation transfer. Defaults to 0.001.
+    filenames : list of str, optional
+        List of filenames corresponding to `src_bdp_obj`. Used with `annot_lut`
+        to assign specific annotation values. Defaults to None.
+    annot_lut : str or dict, optional
+        Path to a JSON file or a dictionary mapping keywords (from `filenames`)
+        to annotation values. If None, annotations are assigned based on the
+        order of `src_bdp_obj`. Defaults to None.
+
+    Returns
+    -------
+    BraDiPhoHelper3D
+        The target object `tgt_bdp_obj` with updated 'annotation' scalar data.
+    numpy.ndarray
+        The array of new annotations applied to `tgt_bdp_obj`.
+    """
+    if annot_lut and isinstance(annot_lut, str):
         with open(annot_lut, 'r') as f:
             annot_lut = json.load(f)
 
@@ -37,8 +67,8 @@ def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=0.001,
                 if index_match >= 0 and \
                         curr_name[index_match:] == '_'+annot_key.lower():
                     val = annot_value
-                    print('Found key {} for {}'.format(annot_key,
-                                                       filenames[i]))
+                    logging.info('Found key {} for {}'.format(annot_key,
+                                                              filenames[i]))
                     break
             else:
                 val = 1+i
@@ -64,15 +94,23 @@ def run_icp(A, B, max_distance, iteration=10):
     """
     Run the Iterative Closest Point (ICP) algorithm.
 
-    Parameters:
-    A (numpy.ndarray): Source point cloud (Nx3).
-    B (numpy.ndarray): Target point cloud (Mx3).
-    max_distance (float): Maximum distance for closest point matching.
+    Parameters
+    ----------
+    A : numpy.ndarray
+        Source point cloud, shape (N, 3).
+    B : numpy.ndarray
+        Target point cloud, shape (M, 3).
+    max_distance : float
+        Maximum distance for closest point matching.
+    iteration : int, optional
+        The maximum number of ICP iterations. Defaults to 10.
 
-    Returns:
-    tuple: Tuple containing:
-        - numpy.ndarray: The final transformation matrix (4x4).
-        - numpy.ndarray: The transformed source point cloud.
+    Returns
+    -------
+    tuple
+        A tuple containing:
+            - numpy.ndarray: The final transformation matrix (4x4).
+            - numpy.ndarray: The transformed source point cloud (shape N, 3).
     """
     original_A = A.copy()
     if len(A) > 10000:
@@ -117,6 +155,38 @@ def run_icp(A, B, max_distance, iteration=10):
 
 def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
                     return_indices=False, return_distances=False):
+    """
+    Find points in `tgt_bdp_obj` that are neighbors of `src_bdp_obj`.
+
+    The function filters points in `tgt_bdp_obj` based on proximity to
+    `src_bdp_obj` using bounding box, convex hull, and finally a KD-tree
+    search after an initial ICP alignment.
+
+    Parameters
+    ----------
+    src_bdp_obj : BraDiPhoHelper3D
+        Source object.
+    tgt_bdp_obj : BraDiPhoHelper3D
+        Target object.
+    max_dist : float, optional
+        Maximum distance to consider points as neighbors. Defaults to 1.
+    return_indices : bool, optional
+        If True, also return the indices of the matched points in the
+        original target object. Defaults to False.
+    return_distances : bool, optional
+        If True, also return the distances of the matched points.
+        Defaults to False.
+
+    Returns
+    -------
+    list
+        A list containing the modified `tgt_bdp_obj` (subsampled to include
+        only matching points).
+        If `return_indices` is True, the list also contains `numpy.ndarray`
+        of indices.
+        If `return_distances` is True, the list also contains `numpy.ndarray`
+        of distances of the matched points from `src_bdp_obj`.
+    """
     src_vectices = src_bdp_obj.get_polydata_vertices()
     tgt_vertices = tgt_bdp_obj.get_polydata_vertices()
 
@@ -192,27 +262,27 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
 
 
 def hash_points(points, start_index=0, precision=None):
-    """Produces a dict from points
-
+    """
     Produces a dict from points by using the points as keys and the
     indices of the points as values.
 
     Parameters
     ----------
-    points: list of ndarray
-        The list of points used to produce the dict.
-    start_index: int, optional
-        The index of the first streamline. 0 by default.
-    precision: int, optional
-        The number of decimals to keep when hashing the points of the
-        points. Allows a soft comparison of points. If None, no
-        rounding is performed.
+    points : numpy.ndarray
+        The array of points (Nx3) used to produce the dict.
+    start_index : int, optional
+        The starting index for the point values in the dictionary.
+        Defaults to 0.
+    precision : int, optional
+        The number of decimals to keep when hashing the points.
+        Allows a soft comparison of points. If None, no rounding is performed.
+        Defaults to None.
 
     Returns
     -------
-    A dict where the keys are streamline points and the values are indices
-    starting at start_index.
-
+    dict
+        A dict where the keys are byte representations of rounded points and
+        the values are their original indices incremented by `start_index`.
     """
 
     keys = np.round(points, precision)
@@ -222,11 +292,54 @@ def hash_points(points, start_index=0, precision=None):
 
 
 def intersection(left, right):
-    """Intersection of two points dict (see hash_points)"""
+    """
+    Computes the intersection of two dictionaries created by `hash_points`.
+
+    The keys are byte representations of points, and values are their indices.
+
+    Parameters
+    ----------
+    left : dict
+        The first dictionary.
+    right : dict
+        The second dictionary.
+
+    Returns
+    -------
+    dict
+        A new dictionary containing only the key-value pairs present in both
+        `left` and `right`.
+    """
     return {k: v for k, v in left.items() if k in right}
 
 
 def apply_intersection(bdp_list, return_indices=False):
+    """
+    Computes the intersection of multiple BraDiPhoHelper3D objects.
+
+    Points are considered the same if their coordinates match up to a
+    precision of 9 decimal places.
+
+    Parameters
+    ----------
+    bdp_list : list of BraDiPhoHelper3D
+        A list of `BraDiPhoHelper3D` objects.
+    return_indices : bool, optional
+        If True, also return the indices of the intersection points relative
+        to the concatenated point list from the first object that contains
+        all intersection points. Defaults to False.
+
+    Returns
+    -------
+    BraDiPhoHelper3D
+        A new `BraDiPhoHelper3D` object containing points present in all
+        input objects.
+    numpy.ndarray, optional
+        If `return_indices` is True, an array of indices of the
+        intersection points. These indices refer to the vertices in the
+        first `BraDiPhoHelper3D` object in `bdp_list` if all intersection
+        points are found within it.
+    """
     points_list = [bdp.get_polydata_vertices() for bdp in bdp_list]
     # Hash the points using the desired precision.
     indices = np.cumsum([0] + [len(p) for p in points_list[:-1]])
@@ -245,6 +358,28 @@ def apply_intersection(bdp_list, return_indices=False):
 
 
 def apply_union(bdp_list, return_indices=False):
+    """
+    Computes the union of multiple BraDiPhoHelper3D objects.
+
+    Duplicate points (matching up to 9 decimal places) are removed.
+
+    Parameters
+    ----------
+    bdp_list : list of BraDiPhoHelper3D
+        A list of `BraDiPhoHelper3D` objects.
+    return_indices : bool, optional
+        If True, also return the unique indices of the points in the union,
+        relative to the concatenated list of all input points before
+        uniqueness is enforced. Defaults to False.
+
+    Returns
+    -------
+    BraDiPhoHelper3D
+        A new `BraDiPhoHelper3D` object containing all unique points from the
+        input objects.
+    numpy.ndarray, optional
+        If `return_indices` is True, an array of unique indices.
+    """
     append_filter = vtk.vtkAppendPolyData()
     for bdp_obj in bdp_list:
         append_filter.AddInputData(bdp_obj.get_polydata())
@@ -259,11 +394,38 @@ def apply_union(bdp_list, return_indices=False):
 
 
 def apply_difference(bdp_list):
-    bdp_union = apply_union(bdp_list[1:])
-    bdp_out, indices = apply_intersection([bdp_list[0], bdp_union],
-                                          return_indices=True)
+    """
+    Computes the difference between the first BraDiPhoHelper3D object and the
+    union of the rest of the objects in the list.
 
+    Points are considered the same if their coordinates match up to a
+    precision of 9 decimal places.
+
+    Parameters
+    ----------
+    bdp_list : list of BraDiPhoHelper3D
+        A list of `BraDiPhoHelper3D` objects. The first element is the
+        object from which the union of the subsequent objects will be
+        subtracted.
+
+    Returns
+    -------
+    BraDiPhoHelper3D
+        A new `BraDiPhoHelper3D` object containing points from the first
+        object that are not present in any of the subsequent objects.
+    """
+    bdp_union = apply_union(bdp_list[1:])
+    # Find points in the first object that are also in the union of the rest
+    _, indices_to_remove = apply_intersection([bdp_list[0], bdp_union],
+                                              return_indices=True)
+
+    # Get all indices from the first object
     ori_indices = np.arange(len(bdp_list[0]))
+    # Determine indices to keep by finding those not in indices_to_remove
+    indices = np.setdiff1d(ori_indices, indices_to_remove)
+    bdp_out = bdp_list[0].subsample_polydata_vertices(indices)
+
+    return bdp_out
     indices = np.setdiff1d(ori_indices, indices)
     bdp_out = bdp_list[0].subsample_polydata_vertices(indices)
 

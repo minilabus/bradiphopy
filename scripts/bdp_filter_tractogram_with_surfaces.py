@@ -39,6 +39,21 @@ CRITERIA = ['include', 'exclude']
 
 
 def _build_arg_parser():
+    """Builds and returns an argparse.ArgumentParser for this script.
+
+    The parser is configured with arguments for:
+    - Input tractogram file.
+    - Output tractogram file.
+    - One or more '--individual_surface' arguments, each specifying
+      a surface file, filtering mode, criteria, and an optional distance.
+    - A flag '--reuse_matched_pts' to control how points matched by one
+      surface are treated by subsequent surface filters.
+    - An overwrite flag for existing output files.
+    The script's module-level docstring is used as the description.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     p = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
                                 description=__doc__)
 
@@ -60,6 +75,27 @@ def _build_arg_parser():
 
 
 def main():
+    """Main function to filter a tractogram using one or more surfaces.
+
+    Parses command-line arguments. Loads the input tractogram.
+    Initializes an array to keep track of points on streamlines that have
+    been matched by a surface.
+    Iterates through each surface filter specified via '--individual_surface'.
+    For each surface:
+        - Parses the ROI name, mode, criteria, and distance.
+        - Loads the surface polydata.
+        - Calls `bradiphopy.segment.filter_from_surface` to get indices
+          of streamlines satisfying the current filter conditions and an
+          updated list of matched points on those streamlines.
+        - The set of streamlines to keep is updated by intersecting the
+          current indices with those from previous filtering steps.
+        - The main tractogram (`sft`) is updated with the filtered streamlines.
+        - If `reuse_matched_pts` is False, the `matched_pts` array for
+          the next iteration is based only on points from the currently
+          kept streamlines that were matched by the current surface.
+    Finally, the filtered tractogram is saved to the output file.
+    If no streamlines remain after filtering, an empty tractogram is saved.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 

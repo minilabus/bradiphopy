@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-
 """
+Provides utility functions for data conversions between NumPy and VTK,
+colormap retrieval, and 3D mesh/point cloud generation and manipulation
+from medical image data.
 """
 
 import matplotlib.pyplot as plt
@@ -26,10 +28,33 @@ datatype_map = {
 
 
 def numpy_to_vtk_array(array, name=None, dtype=None, deep=True):
+    """
+    Converts a NumPy array to a VTK data array.
+
+    Parameters
+    ----------
+    array : numpy.ndarray
+        The NumPy array to convert.
+    name : str, optional
+        The name to assign to the VTK array. Defaults to None.
+    dtype : numpy.dtype or str, optional
+        The desired NumPy data type for the array before VTK conversion.
+        If None, the array's current dtype is used. Defaults to None.
+    deep : bool, optional
+        If True, a deep copy of the NumPy array is made for VTK.
+        This parameter is effectively fixed to True due to the underlying
+        `vtk.util.numpy_support.numpy_to_vtk` call. Defaults to True.
+
+    Returns
+    -------
+    vtk.vtkDataArray
+        The converted VTK data array.
+    """
     if dtype is not None:
         vtk_dtype = datatype_map[np.dtype(dtype)]
     else:
         vtk_dtype = datatype_map[np.dtype(array.dtype)]
+    # The 'deep' parameter in ns.numpy_to_vtk is hardcoded to True in the call
     vtk_array = ns.numpy_to_vtk(np.asarray(array), deep=True,
                                 array_type=vtk_dtype)
     if name is not None:
@@ -38,17 +63,21 @@ def numpy_to_vtk_array(array, name=None, dtype=None, deep=True):
 
 
 def get_colormap(name):
-    """Get a matplotlib colormap from a name or a list of named colors.
+    """
+    Get a Matplotlib colormap from a name or a list of named colors.
+
     Parameters
     ----------
     name : str
-        Name of the colormap or a list of named colors (separated by a -).
+        Name of the Matplotlib colormap (e.g., 'viridis', 'jet') or a
+        string of hyphen-separated color names (e.g., 'red-yellow-blue')
+        to create a custom `LinearSegmentedColormap`.
+
     Returns
     -------
     matplotlib.colors.Colormap
-        The colormap
+        The requested Matplotlib colormap instance.
     """
-
     if '-' in name:
         name_list = name.split('-')
         colors_list = [colors.to_rgba(color)[0:3] for color in name_list]
@@ -61,15 +90,28 @@ def get_colormap(name):
 
 def create_mesh_from_image(img, dilate=0, threshold=0.5):
     """
-    Generate a mesh using the marching cubes algorithm from an image.
+    Generates a mesh using the marching cubes algorithm from an image.
 
-    Parameters:
-    coords (numpy.ndarray): Array (to be binarized).
-    threshold (float): Threshold for the marching cubes algorithm.
-    spacing (tuple): Spacing for the vtkImageData in mm.
+    The generated mesh is transformed to the LPS coordinate system.
 
-    Returns:
-    vtkPolyData: Generated mesh as vtkPolyData.
+    Parameters
+    ----------
+    img : nibabel.Nifti1Image or similar
+        Input medical image object (must have `get_fdata()`,
+        `header.get_zooms()`, and `affine` attributes).
+    dilate : int, optional
+        Number of iterations for binary dilation of the thresholded image
+        before Gaussian smoothing. Defaults to 0 (no dilation).
+    threshold : float, optional
+        Threshold value for the marching cubes algorithm to generate the
+        isosurface from the smoothed, thresholded image data.
+        Defaults to 0.5.
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        The generated mesh as a VTK PolyData object, transformed to LPS
+        coordinate system.
     """
     data = img.get_fdata()
     VOX_SIZE = img.header.get_zooms()
@@ -127,14 +169,21 @@ def create_mesh_from_image(img, dilate=0, threshold=0.5):
 
 def sample_mesh_to_point_cloud(mesh, sampling_distance):
     """
-    Sample a given number of points from the surface of a mesh to create a point cloud.
+    Samples points from the surface of a mesh to create a point cloud.
 
-    Parameters:
-    mesh (vtkPolyData): The mesh from which to sample points.
-    sampling_distance (float): The distance between two sampled points.
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        The input mesh from which to sample points.
+    sampling_distance : float
+        The desired minimum distance between sampled points on the surface.
+        This is used by `vtkPolyDataPointSampler.SetDistance()`.
 
-    Returns:
-    numpy.ndarray: An array of sampled points forming the point cloud.
+    Returns
+    -------
+    numpy.ndarray
+        An array of shape (N, 3) containing the coordinates of the
+        sampled points.
     """
     # Create a filter to sample the surface
     surface_filter = vtk.vtkPolyDataPointSampler()

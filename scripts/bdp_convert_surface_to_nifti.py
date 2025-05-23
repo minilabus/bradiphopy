@@ -19,6 +19,19 @@ from bradiphopy.io import load_polydata
 
 
 def _build_arg_parser():
+    """Builds and returns an argparse.ArgumentParser for this script.
+
+    The parser is configured with arguments for:
+    - Input surface file (e.g., .ply).
+    - Input reference NIFTI file (.nii or .nii.gz) to define the
+      output space.
+    - Output NIFTI file name.
+    - An overwrite flag for existing output files.
+    The script's module-level docstring is used as the description.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_surface',
@@ -33,6 +46,21 @@ def _build_arg_parser():
 
 
 def main():
+    """Main function to convert a surface file to a NIFTI image.
+
+    Parses command-line arguments. Loads the input surface and the
+    reference NIFTI image. The surface vertices are transformed from
+    world coordinates to the voxel coordinate system of the reference NIFTI.
+    This involves applying a flip transformation (presumably to match
+    coordinate system conventions) and the inverse of the reference
+    NIFTI's affine matrix.
+    A new 3D array (density image) is created with the same dimensions
+    as the reference NIFTI. Voxels corresponding to the transformed
+    vertex locations are set to 1. Vertices falling outside the
+    reference image dimensions are discarded.
+    The resulting density image is saved as a NIFTI file, using the
+    affine transformation from the reference NIFTI.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 

@@ -21,6 +21,23 @@ import nibabel as nib
 
 
 def _build_arg_parser():
+    """Builds and returns an argparse.ArgumentParser for this script.
+
+    The parser is configured with arguments for:
+    - Input NIFTI file (.nii or .nii.gz).
+    - Output surface file (.ply).
+    - Scaling factor for the output surface.
+    - A flag to convert coordinates to LPS (Left Posterior Superior).
+    - A flag to save as a point cloud instead of a mesh.
+    - Sampling distance if saving as a point cloud.
+    - Number of dilation iterations for the initial mask.
+    - A flag for saving the output file in ASCII format.
+    - An overwrite flag for existing output files.
+    The script's module-level docstring is used as the description.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument('in_file',
@@ -49,6 +66,18 @@ def _build_arg_parser():
 
 
 def main():
+    """Main function to convert a NIFTI image to a surface representation.
+
+    Parses command-line arguments. Loads the input NIFTI image.
+    Generates an initial mesh from the image data using `create_mesh_from_image`,
+    optionally applying dilation.
+    Applies user-defined scaling and, if requested, a transformation to LPS
+    coordinates.
+    If the `--save_point_cloud` option is selected, it samples points from
+    the transformed mesh using `sample_mesh_to_point_cloud` and saves this
+    point cloud. Otherwise, it saves the transformed mesh.
+    The output is a .ply file, optionally in ASCII format.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 
