@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Functions from FURY that were fixed.
+Provides modified or fixed versions of functions originally from the FURY
+library for 3D visualization tasks, such as scene recording and polyline
+manipulation.
 """
 
 from fury.colormap import line_colors
 from fury.io import save_image
-from fury.lib import (RenderWindow, RenderLargeImage)
-from fury.utils import (map_coordinates_3d_4d,
-                        numpy_to_vtk_cells,
-                        numpy_to_vtk_points)
+from fury.lib import RenderWindow, RenderLargeImage
+from fury.utils import map_coordinates_3d_4d, numpy_to_vtk_cells, numpy_to_vtk_points
 from fury.window import Scene
 import numpy as np
 import vtk
@@ -17,22 +17,45 @@ import vtk.util.numpy_support as ns
 from bradiphopy.utils import numpy_to_vtk_array
 
 
-def record(scene=None, out_path=None, size=(300, 300),
-           position=(0, 0, 1), focal_point=(0, 0, 0), view_up=(0, 0, 1)):
-    """ Record a video of your scene.
+def record(
+    scene=None,
+    out_path=None,
+    size=(300, 300),
+    position=(0, 0, 1),
+    focal_point=(0, 0, 0),
+    view_up=(0, 0, 1),
+):
+    """
+    Records a single frame from a FURY scene or VTK renderer to an image file.
+
     Parameters
-    -----------
-    scene : Scene() or vtkRenderer() object
-        Scene instance
+    ----------
+    scene : fury.window.Scene or vtk.vtkRenderer, optional
+        The scene or renderer to record. If None, a new `Scene` is created.
+        Defaults to None.
     out_path : str, optional
-        Output path for the frames. If None a default fury.png is created.
-    size : (int, int)
-        ``(width, height)`` of the window. Default is (300, 300).
-    verbose : bool
-        print information about the camera. Default is False.
+        Path to save the output image. If None, defaults to "fury.png" in the
+        current working directory. Defaults to None.
+    size : tuple of int, optional
+        A 2-tuple `(width, height)` for the output image resolution.
+        Defaults to `(300, 300)`.
+    position : tuple of float, optional
+        Camera position `(x, y, z)`. Defaults to `(0, 0, 1)`.
+    focal_point : tuple of float, optional
+        Camera focal point `(x, y, z)`. Defaults to `(0, 0, 0)`.
+    view_up : tuple of float, optional
+        Camera view-up vector `(x, y, z)`. Defaults to `(0, 0, 1)`.
     """
     if scene is None:
         scene = Scene()
+
+    # Set camera parameters
+    camera = scene.GetActiveCamera()
+    if camera:
+        camera.SetPosition(position)
+        camera.SetFocalPoint(focal_point)
+        camera.SetViewUp(view_up)
+        scene.ResetCameraClippingRange()
 
     renWin = RenderWindow()
     renWin.SetOffScreenRendering(1)
@@ -47,11 +70,14 @@ def record(scene=None, out_path=None, size=(300, 300),
     renderLarge.SetMagnification(1)
     renderLarge.Update()
 
-    arr = ns.vtk_to_numpy(renderLarge.GetOutput().GetPointData()
-                          .GetScalars())
-    w, h, _ = renderLarge.GetOutput().GetDimensions()
+    arr = ns.vtk_to_numpy(renderLarge.GetOutput().GetPointData().GetScalars())
+    h, w, _ = (
+        renderLarge.GetOutput().GetDimensions()
+    )  # Corrected order: VTK gives H, W, Dims
     components = renderLarge.GetOutput().GetNumberOfScalarComponents()
     arr = arr.reshape((h, w, components))
+    if out_path is None:
+        out_path = "fury.png"
     save_image(arr, out_path)
 
     renWin.RemoveRenderer(scene)
@@ -59,39 +85,50 @@ def record(scene=None, out_path=None, size=(300, 300),
 
 
 def lines_to_vtk_polydata(lines, colors=None):
-    """Create a vtkPolyData with lines and colors.
+    """
+    Creates a `vtk.vtkPolyData` object from a list of lines (polylines) and
+    applies specified colors to its points.
+
     Parameters
     ----------
-    lines : list
-        list of N curves represented as 2D ndarrays
-    colors : array (N, 3), list of arrays, tuple (3,), array (K,)
-        If None or False, a standard orientation colormap is used for every
-        line.
-        If one tuple of color is used. Then all streamlines will have the same
-        colour.
-        If an array (N, 3) is given, where N is equal to the number of lines.
-        Then every line is coloured with a different RGB color.
-        If a list of RGB arrays is given then every point of every line takes
-        a different color.
-        If an array (K, 3) is given, where K is the number of points of all
-        lines then every point is colored with a different RGB color.
-        If an array (K,) is given, where K is the number of points of all
-        lines then these are considered as the values to be used by the
-        colormap.
-        If an array (L,) is given, where L is the number of streamlines then
-        these are considered as the values to be used by the colormap per
-        streamline.
-        If an array (X, Y, Z) or (X, Y, Z, 3) is given then the values for the
-        colormap are interpolated automatically using trilinear interpolation.
+    lines : list of numpy.ndarray
+        A list where each element is a NumPy array of shape (M_i, 3),
+        representing the M_i points of the i-th line.
+    colors : array_like, optional
+        Coloring scheme for the lines. The interpretation depends on the
+        shape and type of `colors`:
+        - If None or False: A standard orientation-based colormap is applied
+          to each line.
+        - tuple (3,): A single RGB color applied to all lines.
+        - numpy.ndarray (N, 3): N is the number of lines. Each line gets a
+          distinct RGB color.
+        - list of numpy.ndarray: Each array in the list corresponds to a line
+          and specifies RGB colors for each point in that line.
+        - numpy.ndarray (K, 3): K is the total number of points across all
+          lines. Each point gets a distinct RGB color.
+        - numpy.ndarray (K,): K is the total number of points. These values
+          are used for colormap lookup for each point.
+        - numpy.ndarray (L,): L is the number of lines. These values are
+          used for colormap lookup, applied per line.
+        - numpy.ndarray (X, Y, Z) or (X, Y, Z, 3): Volumetric data used for
+          trilinear interpolation of colors at line point coordinates.
+        Defaults to None.
+
     Returns
     -------
-    poly_data : vtkPolyData
-    color_is_scalar : bool, true if the color array is a single scalar
-        Scalar array could be used with a colormap lut
-        None if no color was used
+    vtk.vtkPolyData
+        Polydata object containing the lines with associated point data for
+        colors (named "RGB").
+
+    Raises
+    ------
+    ValueError
+        If `lines` is empty.
     """
     # Get the 3d points_array
-    if lines.__class__.__name__ == 'ArraySequence':
+    if (
+        lines.__class__.__name__ == "ArraySequence"
+    ):  # Support for DIPY's ArraySequence
         points_array = lines._data
     else:
         points_array = np.vstack(lines)
@@ -123,41 +160,41 @@ def lines_to_vtk_polydata(lines, colors=None):
             # set automatic rgb colors
             cols_arr = line_colors(lines)
             colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
-            vtk_colors = numpy_to_vtk_array(255 * cols_arr[colors_mapper],
-                                            dtype=np.uint8)
+            vtk_colors = numpy_to_vtk_array(
+                255 * cols_arr[colors_mapper], dtype=np.uint8
+            )
         else:
             cols_arr = np.asarray(colors)
             if cols_arr.dtype == object:  # colors is a list of colors
-                vtk_colors = numpy_to_vtk_array(255 * np.vstack(colors),
-                                                dtype=np.uint8)
+                vtk_colors = numpy_to_vtk_array(
+                    255 * np.vstack(colors), dtype=np.uint8
+                )
             else:
                 if len(cols_arr) == nb_points:
                     if cols_arr.ndim == 1:  # values for every point
-                        vtk_colors = ns.numpy_to_vtk(cols_arr,
-                                                     deep=True)
+                        vtk_colors = ns.numpy_to_vtk(cols_arr, deep=True)
                     elif cols_arr.ndim == 2:  # map color to each point
-                        vtk_colors = numpy_to_vtk_array(255 * cols_arr,
-                                                        dtype=np.uint8)
+                        vtk_colors = numpy_to_vtk_array(
+                            255 * cols_arr, dtype=np.uint8
+                        )
 
                 elif cols_arr.ndim == 1:
                     if len(cols_arr) == nb_lines:  # values for every streamline
                         cols_arrx = []
-                        for (i, value) in enumerate(colors):
-                            cols_arrx += lines[i].shape[0]*[value]
+                        for i, value in enumerate(colors):
+                            cols_arrx += lines[i].shape[0] * [value]
                         cols_arrx = np.array(cols_arrx)
-                        vtk_colors = ns.numpy_to_vtk(cols_arrx,
-                                                     deep=True)
+                        vtk_colors = ns.numpy_to_vtk(cols_arrx, deep=True)
                     else:  # the same colors for all points
                         vtk_colors = numpy_to_vtk_array(
-                            np.tile(255 * cols_arr, (nb_points, 1)),
-                            dtype=np.uint8)
+                            np.tile(255 * cols_arr, (nb_points, 1)), dtype=np.uint8
+                        )
 
                 elif cols_arr.ndim == 2:  # map color to each line
-                    colors_mapper = np.repeat(lines_range, points_per_line,
-                                              axis=0)
+                    colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
                     vtk_colors = numpy_to_vtk_array(
-                        255 * cols_arr[colors_mapper],
-                        dtype=np.uint8)
+                        255 * cols_arr[colors_mapper], dtype=np.uint8
+                    )
                 else:  # colormap
                     #  get colors for each vertex
                     cols_arr = map_coordinates_3d_4d(cols_arr, points_array)
@@ -170,14 +207,19 @@ def lines_to_vtk_polydata(lines, colors=None):
 
 
 def get_polydata_lines(line_polydata):
-    """Convert vtk polydata to a list of lines ndarrays.
+    """
+    Extracts lines from a `vtk.vtkPolyData` object into a list of NumPy arrays.
+
     Parameters
     ----------
-    line_polydata : vtkPolyData
+    line_polydata : vtk.vtkPolyData
+        The input polydata object from which to extract lines. It is assumed
+        that this polydata contains lines (polylines) in its cell structure.
+
     Returns
     -------
-    lines : list
-        List of N curves represented as 2D ndarrays
+    list of numpy.ndarray
+        List of NumPy arrays, each representing a line's vertices (M_i, 3).
     """
     lines_vertices = ns.vtk_to_numpy(line_polydata.GetPoints().GetData())
     lines_idx = ns.vtk_to_numpy(line_polydata.GetLines().GetData())
@@ -188,7 +230,7 @@ def get_polydata_lines(line_polydata):
         line_len = lines_idx[current_idx]
 
         next_idx = current_idx + line_len + 1
-        line_range = lines_idx[current_idx + 1: next_idx]
+        line_range = lines_idx[current_idx + 1 : next_idx]
 
         lines += [lines_vertices[line_range]]
         current_idx = next_idx

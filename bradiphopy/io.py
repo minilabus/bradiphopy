@@ -11,8 +11,31 @@ VTK_EXTENSIONS = [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
 
 
 def load_polydata(filename, to_lps=False):
+    """
+    Loads polygonal data from a file into a `vtk.vtkPolyData` object.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the input file. Supported extensions are: .vtk, .vtp, .fib,
+        .ply, .stl, .xml, .obj.
+    to_lps : bool, optional
+        If True, applies a transformation to convert the data to LPS
+        (Left Posterior Superior) coordinate system by flipping the X and Y
+        axes. Defaults to False.
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        The loaded polydata object, potentially transformed to LPS.
+
+    Raises
+    ------
+    IOError
+        If the file does not exist or if the file extension is not supported.
+    """
     if not os.path.isfile(filename):
-        raise IOError('{} does not exist.'.format(filename))
+        raise IOError("{} does not exist.".format(filename))
 
     ext = os.path.splitext(filename)[-1].lower()
 
@@ -33,7 +56,7 @@ def load_polydata(filename, to_lps=False):
         reader.SetFileName(filename)
         reader.Update()
     else:
-        raise IOError('{} is not supported by VTK.'.format(ext))
+        raise IOError("{} is not supported by VTK.".format(ext))
 
     reader.SetFileName(filename)
     reader.Update()
@@ -55,6 +78,30 @@ def load_polydata(filename, to_lps=False):
 
 
 def save_polydata(polydata, filename, ascii=True):
+    """
+    Saves a `vtk.vtkPolyData` object to a file.
+
+    Parameters
+    ----------
+    polydata : vtk.vtkPolyData
+        The polydata object to save.
+    filename : str
+        Path to the output file. Supported extensions are: .vtk, .vtp, .fib,
+        .ply, .stl, .xml, .obj.
+    ascii : bool, optional
+        If True, saves in ASCII format. Otherwise, binary format is used where
+        available (e.g., .ply, .stl). Defaults to True. For .ply, attempts to
+        set color array name to "RGB" for some viewers.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    IOError
+        If the file extension is not supported.
+    """
     ext = os.path.splitext(filename)[-1].lower()
 
     if ext == ".vtk":
@@ -73,12 +120,23 @@ def save_polydata(polydata, filename, ascii=True):
     elif ext == ".obj":
         writer = vtk.vtkOBJWriter()
     else:
-        raise IOError('{} is not supported by VTK.'.format(ext))
+        raise IOError("{} is not supported by VTK.".format(ext))
 
     writer.SetFileName(filename)
     writer.SetInputData(polydata)
 
     if ascii:
-        writer.SetFileTypeToASCII()
+        if hasattr(writer, "SetFileTypeToASCII"):
+            writer.SetFileTypeToASCII()
+    else:
+        if hasattr(writer, "SetFileTypeToBinary"):
+            writer.SetFileTypeToBinary()
+        # For STL, binary is the default if FileType is not set to ASCII
+        # For PLY, SetFileTypeToBinary is available.
+        # For VTK legacy, SetFileTypeToBinary is available.
+        # For VTP (XML), it's text based but can have compressed binary inline.
+        # SetFileTypeToBinary is not typical for XML based writers like vtkXMLPolyDataWriter.
+        # OBJ is typically text.
+
     writer.Update()
     writer.Write()

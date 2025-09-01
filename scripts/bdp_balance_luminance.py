@@ -18,13 +18,16 @@ import numpy as np
 
 def _build_arg_parser():
     p = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument('in_files', nargs='+',
-                   help='Input filenames (.jpg or .png).')
-    p.add_argument('out_dir',
-                   help='Output directory for balanced images.')
-    p.add_argument('-f', dest='overwrite', action='store_true',
-                   help='Force overwriting of the output files.')
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
+    )
+    p.add_argument("in_files", nargs="+", help="Input filenames (.jpg or .png).")
+    p.add_argument("out_dir", help="Output directory for balanced images.")
+    p.add_argument(
+        "-f",
+        dest="overwrite",
+        action="store_true",
+        help="Force overwriting of the output files.",
+    )
     return p
 
 
@@ -35,7 +38,8 @@ def main():
     if os.path.isdir(args.out_dir):
         if not args.overwrite:
             raise IOError(
-                '{} already exists, use -f to overwrite.'.format(args.out_dir))
+                "{} already exists, use -f to overwrite.".format(args.out_dir)
+            )
         else:
             shutil.rmtree(args.out_dir)
     os.makedirs(args.out_dir)
@@ -58,9 +62,9 @@ def main():
     for i, hsv_img in enumerate(img_hsv_list):
         curr_min = np.min(hsv_img, axis=(0, 1))
 
-        hsv_img -= (curr_min + min_val)
+        hsv_img -= curr_min + min_val
         curr_avg = np.average(hsv_img, axis=(0, 1))
-        hsv_img *= (avg_val / curr_avg)
+        hsv_img *= avg_val / curr_avg
 
         hsv_img = np.clip(hsv_img, 0, max_val)
         rgb_img = matplotlib.colors.hsv_to_rgb(hsv_img)
@@ -70,5 +74,5 @@ def main():
         imageio.imwrite(out_file, rgb_img.astype(np.uint8))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
