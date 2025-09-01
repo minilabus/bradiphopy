@@ -5,6 +5,8 @@
 Colorize PolyData from and to any of these extensions:
     [".vtk", ".vtp", ".ply", ".stl", ".xml", ".obj"]
 
+In the context of the Bradipho project, most scripts expect the PLY format.
+
 The script will colorize by modifying the Hue of the HSV color space.
 The saturation and value can be modified with the --saturation_target,
 --saturation_multiplier, --value_target, and --value_multiplier options.
@@ -25,85 +27,92 @@ from bradiphopy.utils import get_colormap
 
 
 def _build_arg_parser():
-    """Builds and returns an argparse.ArgumentParser for this script.
-
-    The parser is configured with arguments for an input file, an output
-    file, and a mutually exclusive group for colorization method (single
-    RGB color, colormap by axis, or a JSON color LUT). It also includes
-    options for selecting the axis for colormapping, and parameters to
-    manipulate saturation and value in HSV space. Finally, it has flags
-    for ASCII output and overwriting existing files. The script's
-    module-level docstring is used as the description.
-
-    Returns:
-        argparse.ArgumentParser: The configured argument parser.
-    """
     p = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument('in_file',
-                   help='Input filename (must be supported by VTK).')
-    p.add_argument('out_file',
-                   help='Output filename (must be supported by VTK).')
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
+    )
+    p.add_argument("in_file", help="Input filename (must be supported by VTK).")
+    p.add_argument("out_file", help="Output filename (must be supported by VTK).")
     p2 = p.add_mutually_exclusive_group(required=True)
-    p2.add_argument('--color', nargs=3, type=int,
-                    help='Color as RGB (0-255).')
-    p2.add_argument('--colormap', nargs='?', const='jet',
-                    help='Select the colormap for axis ordering coloring '
-                         '[%(default)s].\nUse two Matplotlib named color '
-                         'separeted by a - to create your own colormap.')
-    p2.add_argument('--cLUT',
-                    help='Select the colormap from a .json file containing a '
-                         'color LUT (uses basename as key in the dict).')
-    p.add_argument('--axis', default='auto', choices=['x', 'y', 'z', 'auto'],
-                   help='Axis to use for the colormap [%(choices)s].')
+    p2.add_argument("--color", nargs=3, type=int, help="Color as RGB (0-255).")
+    p2.add_argument(
+        "--colormap",
+        nargs="?",
+        const="jet",
+        help="Select the colormap for axis ordering coloring "
+        "[%(default)s].\nUse two Matplotlib named color "
+        "separeted by a - to create your own colormap.",
+    )
+    p2.add_argument(
+        "--cLUT",
+        help="Select the colormap from a .json file containing a "
+        "color LUT (uses basename as key in the dict).",
+    )
+    p.add_argument(
+        "--axis",
+        default="auto",
+        choices=["x", "y", "z", "auto"],
+        help="Axis to use for the colormap [%(choices)s].",
+    )
 
-    p.add_argument_group('Color manipulation')
+    p.add_argument_group("Color manipulation")
     s = p.add_mutually_exclusive_group()
-    s.add_argument('--saturation_target', type=float, const=0.6, nargs='?',
-                   help='Target saturation. Must be lower than 1.0\n'
-                        'Lower = Move toward white, gray, black [%(default)s].')
-    s.add_argument('--saturation_multiplier', type=float, const=1.0, nargs='?',
-                   help='Saturation multiplier. Must be lower than 1.0\n'
-                        'Lower = Move toward white, gray, black [%(default)s].')
+    s.add_argument(
+        "--saturation_target",
+        type=float,
+        const=0.6,
+        nargs="?",
+        help="Target saturation. Must be lower than 1.0\n"
+        "Lower = Move toward white, gray, black [%(default)s].",
+    )
+    s.add_argument(
+        "--saturation_multiplier",
+        type=float,
+        const=1.0,
+        nargs="?",
+        help="Saturation multiplier. Must be lower than 1.0\n"
+        "Lower = Move toward white, gray, black [%(default)s].",
+    )
     v = p.add_mutually_exclusive_group()
-    v.add_argument('--value_target', type=float, const=160, nargs='?',
-                   help='Target value. Must be lower than 255\n'
-                        'Should be around 100-192 [%(default)s].')
-    v.add_argument('--value_multiplier', type=float, const=1.8, nargs='?',
-                   help='Value multiplier. Higher = More intense color\n'
-                        'Should be around 1.25-2.0 [%(default)s].')
-    p.add_argument('--ascii', action='store_true',
-                   help='Save the file with data as ASCII '
-                        '(instead of binary).')
-    p.add_argument('-f', dest='overwrite', action='store_true',
-                   help='Force overwriting of the output files.')
+    v.add_argument(
+        "--value_target",
+        type=float,
+        const=160,
+        nargs="?",
+        help="Target value. Must be lower than 255\n"
+        "Should be around 100-192 [%(default)s].",
+    )
+    v.add_argument(
+        "--value_multiplier",
+        type=float,
+        const=1.8,
+        nargs="?",
+        help="Value multiplier. Higher = More intense color\n"
+        "Should be around 1.25-2.0 [%(default)s].",
+    )
+    p.add_argument(
+        "--ascii",
+        action="store_true",
+        help="Save the file with data as ASCII (instead of binary).",
+    )
+    p.add_argument(
+        "-f",
+        dest="overwrite",
+        action="store_true",
+        help="Force overwriting of the output files.",
+    )
     return p
 
 
 def main():
-    """Main function to execute the VTK format colorization script.
-
-    Parses command-line arguments. Loads the input polydata file.
-    Determines the colorization strategy based on user input:
-    - If a specific RGB --color is provided, it's applied.
-    - If --cLUT is given, it attempts to find the input file's basename
-      in the JSON LUT and apply the corresponding color.
-    - If --colormap is specified, colors are applied based on vertex
-      coordinates along a chosen --axis (or auto-detected axis).
-    The script then applies optional saturation and value adjustments in
-    HSV color space to the determined RGB colors. Finally, the colorized
-    polydata (with an 'RGB' scalar array) is saved to the output .ply file.
-    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 
     if os.path.isfile(args.out_file) and not args.overwrite:
         raise IOError(
-            '{} already exists, use -f to overwrite.'.format(args.out_file))
+            "{} already exists, use -f to overwrite.".format(args.out_file)
+        )
 
     _, ext = os.path.splitext(args.out_file)
-    if ext != '.ply':
-        raise ValueError('Output file must be a .ply file to support color.')
 
     polydata = load_polydata(args.in_file)
     bdp_obj = BraDiPhoHelper3D(polydata)
@@ -111,7 +120,7 @@ def main():
 
     basename = os.path.basename(args.in_file)
     if args.cLUT:
-        with open(args.cLUT, 'r') as f:
+        with open(args.cLUT, "r") as f:
             cLUT = json.load(f)
         name = os.path.splitext(basename)[0]
         if name in cLUT:
@@ -120,7 +129,7 @@ def main():
             args.color = [0, 0, 0]
 
     try:
-        rgb_scalar = bdp_obj.get_scalar('RGB')
+        rgb_scalar = bdp_obj.get_scalar("RGB")
         empty = False
     except ValueError:
         rgb_scalar = np.ones(vertices.shape) * 255
@@ -138,15 +147,16 @@ def main():
             rgb_scalar = matplotlib.colors.hsv_to_rgb(hsv_scalar)
     else:
         bbox = np.min(vertices, axis=0), np.max(vertices, axis=0)
-        if args.axis == 'auto':
+        if args.axis == "auto":
             axis = np.argmax(np.abs(bbox[0] - bbox[1]))
         else:
-            axis = 'xyz'.index(args.axis)
+            axis = "xyz".index(args.axis)
 
         cmap = get_colormap(args.colormap)
 
-        normalized_value = (vertices[:, axis] - bbox[0][axis]) / \
-            (bbox[1][axis] - bbox[0][axis])
+        normalized_value = (vertices[:, axis] - bbox[0][axis]) / (
+            bbox[1][axis] - bbox[0][axis]
+        )
         rgb_scalar = cmap(normalized_value)[:, 0:3]
 
         if empty:
@@ -168,9 +178,9 @@ def main():
     np.clip(hsv_scalar[:, 2], 0, 255, out=hsv_scalar[:, 2])
     rgb_scalar = matplotlib.colors.hsv_to_rgb(hsv_scalar)
 
-    bdp_obj.set_scalar(rgb_scalar, 'RGB', dtype='uint8')
+    bdp_obj.set_scalar(rgb_scalar, "RGB", dtype="uint8")
     save_polydata(bdp_obj.get_polydata(), args.out_file, ascii=args.ascii)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,7 +1,13 @@
-setuptools==60.*
+# General dependencies
 numpy
-dipy
-fury
 scipy
-vtk
 matplotlib
+imageio
+nibabel
+scilpy
+dipy
+vtk
+fury
+
+# Development dependencies
+ruff

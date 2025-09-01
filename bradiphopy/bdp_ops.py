@@ -11,7 +11,6 @@ from functools import reduce
 import json
 import logging
 import os
-import random
 
 import numpy as np
 from scipy.linalg import orthogonal_procrustes
@@ -21,8 +20,9 @@ import vtk
 from bradiphopy.bradipho_helper import BraDiPhoHelper3D
 
 
-def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=0.001,
-                    filenames=None, annot_lut=None):
+def transfer_annots(
+    src_bdp_obj, tgt_bdp_obj, distance=0.001, filenames=None, annot_lut=None
+):
     """
     Transfer annotations from source objects to a target object.
 
@@ -51,42 +51,44 @@ def transfer_annots(src_bdp_obj, tgt_bdp_obj, distance=0.001,
         The array of new annotations applied to `tgt_bdp_obj`.
     """
     if annot_lut and isinstance(annot_lut, str):
-        with open(annot_lut, 'r') as f:
+        with open(annot_lut, "r") as f:
             annot_lut = json.load(f)
 
     totals_size = np.cumsum([len(src) for src in src_bdp_obj])
     totals_size = np.insert(totals_size, 0, 0)
     merged_annots = np.zeros((totals_size[-1],), dtype=np.uint8)
-    for i in range(len(totals_size)-1):
+    for i in range(len(totals_size) - 1):
         if filenames and annot_lut:
-            curr_name = os.path.basename(
-                os.path.splitext(filenames[i])[0]).lower()
+            curr_name = os.path.basename(os.path.splitext(filenames[i])[0]).lower()
             for annot_key, annot_value in annot_lut.items():
-                index_match = curr_name.find('_'+annot_key.lower())
+                index_match = curr_name.find("_" + annot_key.lower())
 
-                if index_match >= 0 and \
-                        curr_name[index_match:] == '_'+annot_key.lower():
+                if (
+                    index_match >= 0
+                    and curr_name[index_match:] == "_" + annot_key.lower()
+                ):
                     val = annot_value
-                    logging.info('Found key {} for {}'.format(annot_key,
-                                                              filenames[i]))
+                    logging.info(
+                        "Found key {} for {}".format(annot_key, filenames[i])
+                    )
                     break
             else:
-                val = 1+i
-        merged_annots[totals_size[i]:totals_size[i+1]] = val
+                val = 1 + i
+        merged_annots[totals_size[i] : totals_size[i + 1]] = val
 
-    merged_vertices = np.vstack(
-        [src.get_polydata_vertices() for src in src_bdp_obj])
+    merged_vertices = np.vstack([src.get_polydata_vertices() for src in src_bdp_obj])
     merged_ckd_tree = cKDTree(merged_vertices)
 
     # Get the surface closest point in the point cloud
     new_annots = np.zeros((len(tgt_bdp_obj),), dtype=np.uint8)
-    distances, indices = merged_ckd_tree.query(tgt_bdp_obj.get_polydata_vertices(),
-                                               k=1, distance_upper_bound=distance)
+    distances, indices = merged_ckd_tree.query(
+        tgt_bdp_obj.get_polydata_vertices(), k=1, distance_upper_bound=distance
+    )
     indices[distances == np.inf] = -1
     for i, ind in enumerate(indices):
         new_annots[i] = 0 if ind == -1 else merged_annots[ind]
 
-    tgt_bdp_obj.set_scalar(new_annots, name='annotation')
+    tgt_bdp_obj.set_scalar(new_annots, name="annotation")
     return tgt_bdp_obj, new_annots
 
 
@@ -117,8 +119,9 @@ def run_icp(A, B, max_distance, iteration=10):
         A = A[np.random.choice(A.shape[0], 10000, replace=False), :]
     if len(B) > 10000:
         B = B[np.random.choice(B.shape[0], 10000, replace=False), :]
-    assert A.shape[1] == 3 and B.shape[
-        1] == 3, "Point clouds must have shape (N,3) or (M,3)"
+    assert A.shape[1] == 3 and B.shape[1] == 3, (
+        "Point clouds must have shape (N,3) or (M,3)"
+    )
 
     # Initial guess for the transformation
     R = np.eye(3)
@@ -130,8 +133,9 @@ def run_icp(A, B, max_distance, iteration=10):
 
         # Build a KD-Tree for efficient nearest neighbor search
         tree = cKDTree(B)
-        distances, indices = tree.query(A_transformed,
-                                        distance_upper_bound=max_distance)
+        distances, indices = tree.query(
+            A_transformed, distance_upper_bound=max_distance
+        )
 
         # Filter pairs with distances within the threshold
         valid_idx = np.where(distances < max_distance)[0]
@@ -153,8 +157,13 @@ def run_icp(A, B, max_distance, iteration=10):
     return T, np.dot(original_A, R.T) + t
 
 
-def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
-                    return_indices=False, return_distances=False):
+def match_neighbors(
+    src_bdp_obj,
+    tgt_bdp_obj,
+    max_dist=1,
+    return_indices=False,
+    return_distances=False,
+):
     """
     Find points in `tgt_bdp_obj` that are neighbors of `src_bdp_obj`.
 
@@ -191,16 +200,17 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
     tgt_vertices = tgt_bdp_obj.get_polydata_vertices()
 
     initial_size = len(tgt_vertices)
-    logging.warning(
-        'Number of vertices in source: {}'.format(len(src_vectices)))
-    logging.warning(
-        'Number of vertices in target: {}'.format(len(tgt_vertices)))
+    logging.warning("Number of vertices in source: {}".format(len(src_vectices)))
+    logging.warning("Number of vertices in target: {}".format(len(tgt_vertices)))
 
     src_bbox = np.array(src_bdp_obj.get_bound()).reshape(3, 2).T
-    logging.warning('Source bounding box X: {} / Y: {} / Z: {}'.format(
-        np.round(src_bbox[:, 0], 4),
-        np.round(src_bbox[:, 1], 4),
-        np.round(src_bbox[:, 2], 4)))
+    logging.warning(
+        "Source bounding box X: {} / Y: {} / Z: {}".format(
+            np.round(src_bbox[:, 0], 4),
+            np.round(src_bbox[:, 1], 4),
+            np.round(src_bbox[:, 2], 4),
+        )
+    )
 
     # Extend the bbox by the max_distance per axis to make sure
     # we get all the vertices
@@ -208,14 +218,16 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
     src_bbox[1] += max_dist
     min_condition = np.min(tgt_vertices - src_bbox[0], axis=1) > 0
     max_condition = np.max(tgt_vertices - src_bbox[1], axis=1) < 0
-    bbox_in_indices = np.where(np.logical_and(min_condition,
-                                              max_condition))[0]
+    bbox_in_indices = np.where(np.logical_and(min_condition, max_condition))[0]
 
     # Select the vertices in the bbox
     tgt_bdp_obj = tgt_bdp_obj.subsample_polydata(bbox_in_indices)
     tgt_vertices = tgt_vertices[bbox_in_indices]
-    logging.warning('Number of vertices of target within source '
-                    'bbox: {}'.format(len(bbox_in_indices)))
+    logging.warning(
+        "Number of vertices of target within source bbox: {}".format(
+            len(bbox_in_indices)
+        )
+    )
 
     # This makes the convex hull bigger and more stable for computation
     barycenter = np.mean(src_vectices, axis=0)
@@ -227,27 +239,36 @@ def match_neighbors(src_bdp_obj, tgt_bdp_obj, max_dist=1,
 
     convex_hull = new_convex_hull[ConvexHull(new_convex_hull).vertices]
     convex_hull = Delaunay(convex_hull)
-    convex_hull_in_indices = [i for i in range(len(tgt_vertices))
-                              if convex_hull.find_simplex(tgt_vertices[i]) >= 0]
+    convex_hull_in_indices = [
+        i
+        for i in range(len(tgt_vertices))
+        if convex_hull.find_simplex(tgt_vertices[i]) >= 0
+    ]
     # Select the vertices in the convex hull
-    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata(
-        convex_hull_in_indices)
+    tgt_bdp_obj = tgt_bdp_obj.subsample_polydata(convex_hull_in_indices)
     tgt_vertices = tgt_vertices[convex_hull_in_indices]
 
     # To help matching, we will run a small ICP first
     _, src_vectices = run_icp(src_vectices, tgt_vertices, max_dist)
-    logging.warning('Number of vertices of target within convex hull of '
-                    'source: {}'.format(len(convex_hull_in_indices)))
+    logging.warning(
+        "Number of vertices of target within convex hull of source: {}".format(
+            len(convex_hull_in_indices)
+        )
+    )
 
     src_ckd_tree = cKDTree(src_vectices)
-    distances, _ = src_ckd_tree.query(tgt_vertices,
-                                      k=1, distance_upper_bound=max_dist)
+    distances, _ = src_ckd_tree.query(
+        tgt_vertices, k=1, distance_upper_bound=max_dist
+    )
     # Select the vertices within the max distance
     close_indices = np.argwhere(distances < max_dist).flatten()
     tgt_bdp_obj = tgt_bdp_obj.subsample_polydata(close_indices)
     real_indices = bbox_in_indices[convex_hull_in_indices][close_indices]
-    logging.warning('Number of vertices of target within max distance of '
-                    'source: {}'.format(len(close_indices)))
+    logging.warning(
+        "Number of vertices of target within max distance of source: {}".format(
+            len(close_indices)
+        )
+    )
 
     return_data = [tgt_bdp_obj]
 
@@ -343,8 +364,7 @@ def apply_intersection(bdp_list, return_indices=False):
     points_list = [bdp.get_polydata_vertices() for bdp in bdp_list]
     # Hash the points using the desired precision.
     indices = np.cumsum([0] + [len(p) for p in points_list[:-1]])
-    hashes = [hash_points(s, i, precision=9) for
-              s, i in zip(points_list, indices)]
+    hashes = [hash_points(s, i, precision=9) for s, i in zip(points_list, indices)]
 
     # Perform the operation on the hashes and get the output points.
     to_keep = reduce(intersection, hashes)
@@ -411,22 +431,18 @@ def apply_difference(bdp_list):
     Returns
     -------
     BraDiPhoHelper3D
-        A new `BraDiPhoHelper3D` object containing points from the first
-        object that are not present in any of the subsequent objects.
+        New `BraDiPhoHelper3D` object with points from the first object not present in subsequent objects.
     """
     bdp_union = apply_union(bdp_list[1:])
     # Find points in the first object that are also in the union of the rest
-    _, indices_to_remove = apply_intersection([bdp_list[0], bdp_union],
-                                              return_indices=True)
+    _, indices_to_remove = apply_intersection(
+        [bdp_list[0], bdp_union], return_indices=True
+    )
 
     # Get all indices from the first object
     ori_indices = np.arange(len(bdp_list[0]))
     # Determine indices to keep by finding those not in indices_to_remove
     indices = np.setdiff1d(ori_indices, indices_to_remove)
-    bdp_out = bdp_list[0].subsample_polydata_vertices(indices)
-
-    return bdp_out
-    indices = np.setdiff1d(ori_indices, indices)
     bdp_out = bdp_list[0].subsample_polydata_vertices(indices)
 
     return bdp_out

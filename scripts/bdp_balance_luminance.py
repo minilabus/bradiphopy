@@ -17,41 +17,29 @@ import numpy as np
 
 
 def _build_arg_parser():
-    """Builds and returns an argparse.ArgumentParser for this script.
-
-    The parser is configured with arguments for input files, output directory,
-    and an overwrite flag. The script's module-level docstring is used as
-    the description for the parser.
-
-    Returns:
-        argparse.ArgumentParser: The configured argument parser.
-    """
     p = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument('in_files', nargs='+',
-                   help='Input filenames (.jpg or .png).')
-    p.add_argument('out_dir',
-                   help='Output directory for balanced images.')
-    p.add_argument('-f', dest='overwrite', action='store_true',
-                   help='Force overwriting of the output files.')
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
+    )
+    p.add_argument("in_files", nargs="+", help="Input filenames (.jpg or .png).")
+    p.add_argument("out_dir", help="Output directory for balanced images.")
+    p.add_argument(
+        "-f",
+        dest="overwrite",
+        action="store_true",
+        help="Force overwriting of the output files.",
+    )
     return p
 
 
 def main():
-    """Main function to execute the luminance balancing script.
-
-    Parses command-line arguments, reads input images, calculates the
-    average luminance across all images, then adjusts each image's
-    luminance to match this average. The processed images are saved
-    to the specified output directory.
-    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 
     if os.path.isdir(args.out_dir):
         if not args.overwrite:
             raise IOError(
-                '{} already exists, use -f to overwrite.'.format(args.out_dir))
+                "{} already exists, use -f to overwrite.".format(args.out_dir)
+            )
         else:
             shutil.rmtree(args.out_dir)
     os.makedirs(args.out_dir)
@@ -74,9 +62,9 @@ def main():
     for i, hsv_img in enumerate(img_hsv_list):
         curr_min = np.min(hsv_img, axis=(0, 1))
 
-        hsv_img -= (curr_min + min_val)
+        hsv_img -= curr_min + min_val
         curr_avg = np.average(hsv_img, axis=(0, 1))
-        hsv_img *= (avg_val / curr_avg)
+        hsv_img *= avg_val / curr_avg
 
         hsv_img = np.clip(hsv_img, 0, max_val)
         rgb_img = matplotlib.colors.hsv_to_rgb(hsv_img)
@@ -86,5 +74,5 @@ def main():
         imageio.imwrite(out_file, rgb_img.astype(np.uint8))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

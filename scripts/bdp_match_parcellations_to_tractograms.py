@@ -27,25 +27,37 @@ from bradiphopy.io import load_polydata
 
 def _build_arg_parser():
     p = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument('in_tractograms', nargs='+',
-                   help='A list of tractograms.')
-    p.add_argument('in_surfaces', nargs='+',
-                   help='A list of surfaces.')
-    p.add_argument('out_dir',
-                   help='Output directory.')  # TODO optional, use .h5 by default
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
+    )
+    p.add_argument("in_tractograms", nargs="+", help="A list of tractograms.")
+    p.add_argument("in_surfaces", nargs="+", help="A list of surfaces.")
+    p.add_argument(
+        "out_dir", help="Output directory."
+    )  # TODO optional, use .h5 by default
     # p.add_argument('--in_annotation',
     #                help='Input annotation file only works with one '
     #                     'surface.')
-    p.add_argument('--max_distance', type=float, default=5,
-                   help='Maximum distance to consider a streamline as part of '
-                        'a surface [%(default)s].')
-    p.add_argument('--keep_original_filename', action='store_true',
-                   help='Keep the original filename of the surfaces.')
-    p.add_argument('--save_empty', action='store_true',
-                   help='Save empty tractograms.')
-    p.add_argument('-f', dest='overwrite', action='store_true',
-                   help='Force overwriting of the output files.')
+    p.add_argument(
+        "--max_distance",
+        type=float,
+        default=5,
+        help="Maximum distance to consider a streamline as part of "
+        "a surface [%(default)s].",
+    )
+    p.add_argument(
+        "--keep_original_filename",
+        action="store_true",
+        help="Keep the original filename of the surfaces.",
+    )
+    p.add_argument(
+        "--save_empty", action="store_true", help="Save empty tractograms."
+    )
+    p.add_argument(
+        "-f",
+        dest="overwrite",
+        action="store_true",
+        help="Force overwriting of the output files.",
+    )
     return p
 
 
@@ -55,14 +67,11 @@ def main():
 
     in_files = args.in_tractograms + args.in_surfaces
 
-    in_tractograms = [f for f in in_files if os.path.splitext(f)[
-        1] == '.trk']
-    in_surfaces = [f for f in in_files if os.path.splitext(f)[
-        1] != '.trk']
+    in_tractograms = [f for f in in_files if os.path.splitext(f)[1] == ".trk"]
+    in_surfaces = [f for f in in_files if os.path.splitext(f)[1] != ".trk"]
 
     if os.path.isdir(args.out_dir) and not args.overwrite:
-        raise ValueError(
-            f"{args.out_dir} already exists. Use -f to overwrite.")
+        raise ValueError(f"{args.out_dir} already exists. Use -f to overwrite.")
     elif os.path.isdir(args.out_dir) and args.overwrite:
         shutil.rmtree(args.out_dir)
 
@@ -76,16 +85,14 @@ def main():
         surfaces.append(bdp_obj)
 
     # Concatenate tractograms
-    sft = load_tractogram(in_tractograms[0], 'same')
+    sft = load_tractogram(in_tractograms[0], "same")
     for in_tractogram in in_tractograms[1:]:
-        sft += load_tractogram(in_tractogram, 'same')
+        sft += load_tractogram(in_tractogram, "same")
 
     # Get ready to compute distances from both ends of the streamlines
     distances = np.ones((len(surfaces), len(sft.streamlines), 2)) * 1e3
-    heads = np.array([sft.streamlines[i][0]
-                      for i in range(len(sft.streamlines))])
-    tail = np.array([sft.streamlines[i][-1]
-                     for i in range(len(sft.streamlines))])
+    heads = np.array([sft.streamlines[i][0] for i in range(len(sft.streamlines))])
+    tail = np.array([sft.streamlines[i][-1] for i in range(len(sft.streamlines))])
     flip = np.diag([-1, -1, 1, 1])
 
     # Compute distances from both ends of the streamlines to all surfaces
@@ -121,10 +128,8 @@ def main():
         # Since the matrix is symmetric, we only need to consider one half
         # Also, since endpoints are inversable, we check both combinations
         indices_pair = np.vstack([closest_1_pos, closest_2_pos]).T
-        indices_1 = np.where(
-            (indices_pair[:, 0] == i) & (indices_pair[:, 1] == j))
-        indices_2 = np.where(
-            (indices_pair[:, 0] == j) & (indices_pair[:, 1] == i))
+        indices_1 = np.where((indices_pair[:, 0] == i) & (indices_pair[:, 1] == j))
+        indices_2 = np.where((indices_pair[:, 0] == j) & (indices_pair[:, 1] == i))
         indices = np.unique(np.hstack([indices_1, indices_2]))
 
         if i > j:
@@ -137,11 +142,12 @@ def main():
         if args.keep_original_filename:
             basename_1 = os.path.splitext(os.path.basename(in_surfaces[i]))[0]
             basename_2 = os.path.splitext(os.path.basename(in_surfaces[j]))[0]
-            save_tractogram(sft[indices], os.path.join(
-                args.out_dir, f'{basename_1}_{basename_2}.trk'))
+            save_tractogram(
+                sft[indices],
+                os.path.join(args.out_dir, f"{basename_1}_{basename_2}.trk"),
+            )
         else:
-            save_tractogram(sft[indices], os.path.join(
-                args.out_dir, f'{i}_{j}.trk'))
+            save_tractogram(sft[indices], os.path.join(args.out_dir, f"{i}_{j}.trk"))
 
         # TODO generated .h5
         # TODO Save bundle only if asked

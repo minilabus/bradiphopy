@@ -7,10 +7,8 @@ manipulation.
 
 from fury.colormap import line_colors
 from fury.io import save_image
-from fury.lib import (RenderWindow, RenderLargeImage)
-from fury.utils import (map_coordinates_3d_4d,
-                        numpy_to_vtk_cells,
-                        numpy_to_vtk_points)
+from fury.lib import RenderWindow, RenderLargeImage
+from fury.utils import map_coordinates_3d_4d, numpy_to_vtk_cells, numpy_to_vtk_points
 from fury.window import Scene
 import numpy as np
 import vtk
@@ -19,8 +17,14 @@ import vtk.util.numpy_support as ns
 from bradiphopy.utils import numpy_to_vtk_array
 
 
-def record(scene=None, out_path=None, size=(300, 300),
-           position=(0, 0, 1), focal_point=(0, 0, 0), view_up=(0, 0, 1)):
+def record(
+    scene=None,
+    out_path=None,
+    size=(300, 300),
+    position=(0, 0, 1),
+    focal_point=(0, 0, 0),
+    view_up=(0, 0, 1),
+):
     """
     Records a single frame from a FURY scene or VTK renderer to an image file.
 
@@ -66,9 +70,10 @@ def record(scene=None, out_path=None, size=(300, 300),
     renderLarge.SetMagnification(1)
     renderLarge.Update()
 
-    arr = ns.vtk_to_numpy(renderLarge.GetOutput().GetPointData()
-                          .GetScalars())
-    h, w, _ = renderLarge.GetOutput().GetDimensions() # Corrected order: VTK gives H, W, Dims
+    arr = ns.vtk_to_numpy(renderLarge.GetOutput().GetPointData().GetScalars())
+    h, w, _ = (
+        renderLarge.GetOutput().GetDimensions()
+    )  # Corrected order: VTK gives H, W, Dims
     components = renderLarge.GetOutput().GetNumberOfScalarComponents()
     arr = arr.reshape((h, w, components))
     if out_path is None:
@@ -121,7 +126,9 @@ def lines_to_vtk_polydata(lines, colors=None):
         If `lines` is empty.
     """
     # Get the 3d points_array
-    if lines.__class__.__name__ == 'ArraySequence': # Support for DIPY's ArraySequence
+    if (
+        lines.__class__.__name__ == "ArraySequence"
+    ):  # Support for DIPY's ArraySequence
         points_array = lines._data
     else:
         points_array = np.vstack(lines)
@@ -153,41 +160,41 @@ def lines_to_vtk_polydata(lines, colors=None):
             # set automatic rgb colors
             cols_arr = line_colors(lines)
             colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
-            vtk_colors = numpy_to_vtk_array(255 * cols_arr[colors_mapper],
-                                            dtype=np.uint8)
+            vtk_colors = numpy_to_vtk_array(
+                255 * cols_arr[colors_mapper], dtype=np.uint8
+            )
         else:
             cols_arr = np.asarray(colors)
             if cols_arr.dtype == object:  # colors is a list of colors
-                vtk_colors = numpy_to_vtk_array(255 * np.vstack(colors),
-                                                dtype=np.uint8)
+                vtk_colors = numpy_to_vtk_array(
+                    255 * np.vstack(colors), dtype=np.uint8
+                )
             else:
                 if len(cols_arr) == nb_points:
                     if cols_arr.ndim == 1:  # values for every point
-                        vtk_colors = ns.numpy_to_vtk(cols_arr,
-                                                     deep=True)
+                        vtk_colors = ns.numpy_to_vtk(cols_arr, deep=True)
                     elif cols_arr.ndim == 2:  # map color to each point
-                        vtk_colors = numpy_to_vtk_array(255 * cols_arr,
-                                                        dtype=np.uint8)
+                        vtk_colors = numpy_to_vtk_array(
+                            255 * cols_arr, dtype=np.uint8
+                        )
 
                 elif cols_arr.ndim == 1:
                     if len(cols_arr) == nb_lines:  # values for every streamline
                         cols_arrx = []
-                        for (i, value) in enumerate(colors):
-                            cols_arrx += lines[i].shape[0]*[value]
+                        for i, value in enumerate(colors):
+                            cols_arrx += lines[i].shape[0] * [value]
                         cols_arrx = np.array(cols_arrx)
-                        vtk_colors = ns.numpy_to_vtk(cols_arrx,
-                                                     deep=True)
+                        vtk_colors = ns.numpy_to_vtk(cols_arrx, deep=True)
                     else:  # the same colors for all points
                         vtk_colors = numpy_to_vtk_array(
-                            np.tile(255 * cols_arr, (nb_points, 1)),
-                            dtype=np.uint8)
+                            np.tile(255 * cols_arr, (nb_points, 1)), dtype=np.uint8
+                        )
 
                 elif cols_arr.ndim == 2:  # map color to each line
-                    colors_mapper = np.repeat(lines_range, points_per_line,
-                                              axis=0)
+                    colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
                     vtk_colors = numpy_to_vtk_array(
-                        255 * cols_arr[colors_mapper],
-                        dtype=np.uint8)
+                        255 * cols_arr[colors_mapper], dtype=np.uint8
+                    )
                 else:  # colormap
                     #  get colors for each vertex
                     cols_arr = map_coordinates_3d_4d(cols_arr, points_array)
@@ -212,8 +219,7 @@ def get_polydata_lines(line_polydata):
     Returns
     -------
     list of numpy.ndarray
-        A list where each element is an Ndarray of shape (M_i, 3),
-        representing the M_i vertices of the i-th extracted line.
+        List of NumPy arrays, each representing a line's vertices (M_i, 3).
     """
     lines_vertices = ns.vtk_to_numpy(line_polydata.GetPoints().GetData())
     lines_idx = ns.vtk_to_numpy(line_polydata.GetLines().GetData())
@@ -224,7 +230,7 @@ def get_polydata_lines(line_polydata):
         line_len = lines_idx[current_idx]
 
         next_idx = current_idx + line_len + 1
-        line_range = lines_idx[current_idx + 1: next_idx]
+        line_range = lines_idx[current_idx + 1 : next_idx]
 
         lines += [lines_vertices[line_range]]
         current_idx = next_idx

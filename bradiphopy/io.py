@@ -35,7 +35,7 @@ def load_polydata(filename, to_lps=False):
         If the file does not exist or if the file extension is not supported.
     """
     if not os.path.isfile(filename):
-        raise IOError('{} does not exist.'.format(filename))
+        raise IOError("{} does not exist.".format(filename))
 
     ext = os.path.splitext(filename)[-1].lower()
 
@@ -56,7 +56,7 @@ def load_polydata(filename, to_lps=False):
         reader.SetFileName(filename)
         reader.Update()
     else:
-        raise IOError('{} is not supported by VTK.'.format(ext))
+        raise IOError("{} is not supported by VTK.".format(ext))
 
     reader.SetFileName(filename)
     reader.Update()
@@ -89,11 +89,9 @@ def save_polydata(polydata, filename, ascii=True):
         Path to the output file. Supported extensions are: .vtk, .vtp, .fib,
         .ply, .stl, .xml, .obj.
     ascii : bool, optional
-        If True, saves the file in ASCII format. Otherwise, binary format is
-        used where available (primarily for .ply, .stl). Defaults to True.
-        For .ply, this function also attempts to set the color array name
-        to "RGB" if saving in binary for some viewers, though `vtkPLYWriter`
-        handles colors automatically.
+        If True, saves in ASCII format. Otherwise, binary format is used where
+        available (e.g., .ply, .stl). Defaults to True. For .ply, attempts to
+        set color array name to "RGB" for some viewers.
 
     Returns
     -------
@@ -122,16 +120,16 @@ def save_polydata(polydata, filename, ascii=True):
     elif ext == ".obj":
         writer = vtk.vtkOBJWriter()
     else:
-        raise IOError('{} is not supported by VTK.'.format(ext))
+        raise IOError("{} is not supported by VTK.".format(ext))
 
     writer.SetFileName(filename)
     writer.SetInputData(polydata)
 
     if ascii:
-        if hasattr(writer, 'SetFileTypeToASCII'):
+        if hasattr(writer, "SetFileTypeToASCII"):
             writer.SetFileTypeToASCII()
     else:
-        if hasattr(writer, 'SetFileTypeToBinary'):
+        if hasattr(writer, "SetFileTypeToBinary"):
             writer.SetFileTypeToBinary()
         # For STL, binary is the default if FileType is not set to ASCII
         # For PLY, SetFileTypeToBinary is available.

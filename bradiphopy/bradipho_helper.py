@@ -12,7 +12,7 @@ import vtk
 from bradiphopy.utils import numpy_to_vtk_array
 
 
-class BraDiPhoHelper3D():
+class BraDiPhoHelper3D:
     """
     A helper class to manage and manipulate 3D geometric data using `vtkPolyData`.
 
@@ -39,7 +39,8 @@ class BraDiPhoHelper3D():
     def __str__(self):
         """Generate the string for printing."""
         txt = "BraDiPhoHelper3D object with {} points and {} cells.\n".format(
-            self.polydata.GetNumberOfPoints(), self.polydata.GetNumberOfCells())
+            self.polydata.GetNumberOfPoints(), self.polydata.GetNumberOfCells()
+        )
         txt += "Scalars: {}\n".format(self.get_scalar_names())
 
         return txt
@@ -80,15 +81,23 @@ class BraDiPhoHelper3D():
         """
         polydata = vtk.vtkPolyData()
         if len(triangles):
-            vtk_triangles = np.hstack(np.c_[np.ones(len(triangles),
-                                                    dtype=np.int64) * 3,  # Changed dtype to int64 for compatibility
-                                            triangles])
+            vtk_triangles = np.hstack(
+                np.c_[
+                    np.ones(len(triangles), dtype=np.int64)
+                    * 3,  # Changed dtype to int64 for compatibility
+                    triangles,
+                ]
+            )
         else:
-            vtk_triangles = np.array([], dtype=np.int64) # Changed dtype to int64 for compatibility
+            vtk_triangles = np.array(
+                [], dtype=np.int64
+            )  # Changed dtype to int64 for compatibility
         vtk_triangles = ns.numpy_to_vtkIdTypeArray(vtk_triangles, deep=True)
 
         vtk_cells = vtk.vtkCellArray()
-        vtk_cells.SetCells(len(triangles) if len(triangles) > 0 else 0, vtk_triangles)
+        vtk_cells.SetCells(
+            len(triangles) if len(triangles) > 0 else 0, vtk_triangles
+        )
         polydata.SetPolys(vtk_cells)
 
         vtk_points = vtk.vtkPoints()
@@ -174,30 +183,40 @@ class BraDiPhoHelper3D():
         """
         if not len(indices):
             return BraDiPhoHelper3D(vtk.vtkPolyData())
-        if np.min(indices) < 0 or \
-                np.max(indices) >= self.polydata.GetNumberOfPoints():
+        if (
+            np.min(indices) < 0
+            or np.max(indices) >= self.polydata.GetNumberOfPoints()
+        ):
             raise ValueError("Indices out of range.")
 
         # Check if there are any polygons (triangles)
-        if self.polydata.GetNumberOfPolys() > 0 or self.polydata.GetNumberOfStrips() > 0 :
+        if (
+            self.polydata.GetNumberOfPolys() > 0
+            or self.polydata.GetNumberOfStrips() > 0
+        ):
             # Attempt to get triangles, if it fails (e.g. not all are triangles)
             # or returns an empty list for a valid reason other than no polys,
             # this logic might need refinement.
             # For now, assume get_polydata_triangles() is robust enough.
             try:
                 triangles = self.get_polydata_triangles()
-                if triangles.size > 0: # Check if triangles array is not empty
+                if triangles.size > 0:  # Check if triangles array is not empty
                     new_vertices, new_faces = self.subsample_mesh(indices)
                     # Preserve scalar data from the original object for the new vertices
-                    original_scalars = {name: self.get_scalar(name)[indices] for name in self.get_scalar_names()}
-                    bdo_obj = self.generate_bdp_obj(new_vertices, triangles=new_faces, arrays=original_scalars)
+                    original_scalars = {
+                        name: self.get_scalar(name)[indices]
+                        for name in self.get_scalar_names()
+                    }
+                    bdo_obj = self.generate_bdp_obj(
+                        new_vertices, triangles=new_faces, arrays=original_scalars
+                    )
                     return bdo_obj
-                else: # No triangles, treat as point cloud
+                else:  # No triangles, treat as point cloud
                     return self.subsample_point_cloud_vertices(indices)
-            except ValueError: # If get_polydata_triangles raises ValueError (e.g. not all polys are triangles)
-                 return self.subsample_point_cloud_vertices(indices)
+            except ValueError:  # If get_polydata_triangles raises ValueError (e.g. not all polys are triangles)
+                return self.subsample_point_cloud_vertices(indices)
 
-        else: # No polygons, definitely a point cloud
+        else:  # No polygons, definitely a point cloud
             return self.subsample_point_cloud_vertices(indices)
 
     def subsample_mesh(self, indices):
@@ -284,7 +303,9 @@ class BraDiPhoHelper3D():
         ValueError
             If no scalar with the given name exists.
         """
-        scalar_array = self.polydata.GetPointData().GetArray(name) # Use GetArray for robust access
+        scalar_array = self.polydata.GetPointData().GetArray(
+            name
+        )  # Use GetArray for robust access
         if scalar_array is None:
             # Try GetScalars as a fallback, though GetArray is generally preferred
             scalar_array = self.polydata.GetPointData().GetScalars(name)
@@ -315,17 +336,20 @@ class BraDiPhoHelper3D():
             raise ValueError("Array length does not match number of points.")
         vtk_array = numpy_to_vtk_array(np.array(array), name=name, dtype=dtype)
 
-        if 'normal' in name.lower(): # Case-insensitive check for 'normal'
+        if "normal" in name.lower():  # Case-insensitive check for 'normal'
             self.polydata.GetPointData().SetNormals(vtk_array)
         else:
             # Check if array already exists to replace it, otherwise add it
             if self.polydata.GetPointData().GetArray(name):
-                self.polydata.GetPointData().RemoveArray(name) # Remove old before adding new with SetScalars or AddArray
-            self.polydata.GetPointData().AddArray(vtk_array) # AddArray is safer for general scalars
+                self.polydata.GetPointData().RemoveArray(
+                    name
+                )  # Remove old before adding new with SetScalars or AddArray
+            self.polydata.GetPointData().AddArray(
+                vtk_array
+            )  # AddArray is safer for general scalars
             # Ensure it's set as active scalar if it's the only one or was intended to be
             if self.polydata.GetPointData().GetNumberOfArrays() == 1:
-                 self.polydata.GetPointData().SetActiveScalars(name)
-
+                self.polydata.GetPointData().SetActiveScalars(name)
 
     def get_field_data(self, name):
         """
@@ -373,8 +397,7 @@ class BraDiPhoHelper3D():
         -------
         numpy.ndarray
             Array of shape (M, 3) representing triangle connectivity.
-            Returns an empty array if no triangles are present or if cells
-            are not uniformly triangles.
+            Empty array if no triangles or cells are not uniformly triangles.
 
         Raises
         ------
@@ -382,21 +405,26 @@ class BraDiPhoHelper3D():
             If polygons are present but not all are triangles.
         """
         if self.polydata.GetNumberOfPolys() == 0:
-            return np.array([], dtype=int).reshape(0,3) # No polygons exist
+            return np.array([], dtype=int).reshape(0, 3)  # No polygons exist
 
         vtk_polys_data = self.polydata.GetPolys().GetData()
-        if vtk_polys_data is None: # Should not happen if GetNumberOfPolys > 0
-             return np.array([], dtype=int).reshape(0,3)
+        if vtk_polys_data is None:  # Should not happen if GetNumberOfPolys > 0
+            return np.array([], dtype=int).reshape(0, 3)
 
         vtk_polys = ns.vtk_to_numpy(vtk_polys_data)
 
-        if len(vtk_polys) == 0: # No actual polygon data, though GetNumberOfPolys > 0
+        if (
+            len(vtk_polys) == 0
+        ):  # No actual polygon data, though GetNumberOfPolys > 0
             # This case might indicate lines or verts stored as cells, but not polys.
             # Or, it could be an empty poly cell array.
             # Check generic cells if GetPolys is empty but GetNumberOfCells is not.
-            if self.polydata.GetNumberOfCells() > 0 and self.polydata.GetNumberOfPolys() == 0:
-                 # This implies cells are not vtkPoly, could be vtkTriangleStrip, etc.
-                 # The original code had a fallback for this, let's try to adapt it.
+            if (
+                self.polydata.GetNumberOfCells() > 0
+                and self.polydata.GetNumberOfPolys() == 0
+            ):
+                # This implies cells are not vtkPoly, could be vtkTriangleStrip, etc.
+                # The original code had a fallback for this, let's try to adapt it.
                 nbr_cells = self.polydata.GetNumberOfCells()
                 triangles = []
                 for i in range(nbr_cells):
@@ -409,9 +437,7 @@ class BraDiPhoHelper3D():
                 if triangles:
                     return np.array(triangles, dtype=np.int64)
 
-
             return np.array([], dtype=np.int64).reshape(0, 3)
-
 
         # Assuming polys are triangles, each entry is count (3) followed by 3 indices.
         # Check if the counts are all 3.
@@ -424,29 +450,38 @@ class BraDiPhoHelper3D():
             has_non_triangle_poly = False
             for i in range(nbr_cells):
                 cell = self.polydata.GetCell(i)
-                if cell.GetCellType() == vtk.VTK_POLYGON: # Check if it's a polygon cell
+                if (
+                    cell.GetCellType() == vtk.VTK_POLYGON
+                ):  # Check if it's a polygon cell
                     ids = cell.GetPointIds()
                     if ids.GetNumberOfIds() == 3:
-                        triangles_from_cells.append([ids.GetId(0), ids.GetId(1), ids.GetId(2)])
+                        triangles_from_cells.append(
+                            [ids.GetId(0), ids.GetId(1), ids.GetId(2)]
+                        )
                     else:
-                        has_non_triangle_poly = True # Found a polygon that is not a triangle
-                        break # Stop if a non-triangle polygon is found
-                elif cell.GetCellType() == vtk.VTK_TRIANGLE: # Also check for explicit triangle cells
-                     ids = cell.GetPointIds()
-                     triangles_from_cells.append([ids.GetId(0), ids.GetId(1), ids.GetId(2)])
-
+                        has_non_triangle_poly = (
+                            True  # Found a polygon that is not a triangle
+                        )
+                        break  # Stop if a non-triangle polygon is found
+                elif (
+                    cell.GetCellType() == vtk.VTK_TRIANGLE
+                ):  # Also check for explicit triangle cells
+                    ids = cell.GetPointIds()
+                    triangles_from_cells.append(
+                        [ids.GetId(0), ids.GetId(1), ids.GetId(2)]
+                    )
 
             if has_non_triangle_poly:
                 raise ValueError("Not all polygons are triangles.")
             if triangles_from_cells:
                 return np.array(triangles_from_cells, dtype=np.int64)
-            else: # No triangle cells found, or only non-polygonal cells
-                return np.array([], dtype=np.int64).reshape(0,3)
-
+            else:  # No triangle cells found, or only non-polygonal cells
+                return np.array([], dtype=np.int64).reshape(0, 3)
 
         # If all counts are 3, then proceed with the fast extraction
-        return np.vstack([vtk_polys[1::4], vtk_polys[2::4], vtk_polys[3::4]]).T.astype(np.int64)
-
+        return np.vstack(
+            [vtk_polys[1::4], vtk_polys[2::4], vtk_polys[3::4]]
+        ).T.astype(np.int64)
 
     def get_polydata_vertices(self):
         """
@@ -482,7 +517,11 @@ class BraDiPhoHelper3D():
             Array of shape (M, 3) containing triangle definitions.
         """
         vtk_triangles = np.hstack(
-            np.c_[np.ones(len(triangles), dtype=np.int64) * 3, triangles.astype(np.int64)])
+            np.c_[
+                np.ones(len(triangles), dtype=np.int64) * 3,
+                triangles.astype(np.int64),
+            ]
+        )
         vtk_triangles_array = ns.numpy_to_vtkIdTypeArray(vtk_triangles, deep=True)
         vtk_cells = vtk.vtkCellArray()
         vtk_cells.SetCells(len(triangles), vtk_triangles_array)

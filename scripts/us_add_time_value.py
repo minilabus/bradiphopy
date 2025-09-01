@@ -1,18 +1,23 @@
+# Utility script to add a time value to a VTK polydata file to order epochs
+# Three inputs are: input VTK file, time value, output VTK file
+
 import vtk.util.numpy_support as ns
 import vtk
 import sys
 import numpy as np
+
+
 datatype_map = {
-    np.dtype('int8'): vtk.VTK_CHAR,
-    np.dtype('uint8'): vtk.VTK_UNSIGNED_CHAR,
-    np.dtype('int16'): vtk.VTK_SHORT,
-    np.dtype('uint16'): vtk.VTK_UNSIGNED_SHORT,
-    np.dtype('int32'): vtk.VTK_INT,
-    np.dtype('uint32'): vtk.VTK_UNSIGNED_INT,
-    np.dtype('int64'): vtk.VTK_LONG_LONG,
-    np.dtype('uint64'): vtk.VTK_UNSIGNED_LONG_LONG,
-    np.dtype('float32'): vtk.VTK_FLOAT,
-    np.dtype('float64'): vtk.VTK_DOUBLE,
+    np.dtype("int8"): vtk.VTK_CHAR,
+    np.dtype("uint8"): vtk.VTK_UNSIGNED_CHAR,
+    np.dtype("int16"): vtk.VTK_SHORT,
+    np.dtype("uint16"): vtk.VTK_UNSIGNED_SHORT,
+    np.dtype("int32"): vtk.VTK_INT,
+    np.dtype("uint32"): vtk.VTK_UNSIGNED_INT,
+    np.dtype("int64"): vtk.VTK_LONG_LONG,
+    np.dtype("uint64"): vtk.VTK_UNSIGNED_LONG_LONG,
+    np.dtype("float32"): vtk.VTK_FLOAT,
+    np.dtype("float64"): vtk.VTK_DOUBLE,
 }
 
 
@@ -21,8 +26,7 @@ def numpy_to_vtk_array(array, name=None, dtype=None, deep=True):
         vtk_dtype = datatype_map[np.dtype(dtype)]
     else:
         vtk_dtype = datatype_map[np.dtype(array.dtype)]
-    vtk_array = ns.numpy_to_vtk(np.asarray(array), deep=True,
-                                array_type=vtk_dtype)
+    vtk_array = ns.numpy_to_vtk(np.asarray(array), deep=True, array_type=vtk_dtype)
     if name is not None:
         vtk_array.SetName(name)
     return vtk_array
@@ -35,12 +39,12 @@ reader.Update()
 
 
 arr = np.array([int(sys.argv[2])], dtype=int)
-arr = numpy_to_vtk_array(np.array(arr), name='TimeValue')
+arr = numpy_to_vtk_array(np.array(arr), name="TimeValue")
 polydata = reader.GetOutput()
 # polydata.GetPointData().SetScalars(None) # Erase RGB
 
 polydata.GetFieldData().AddArray(arr)
-print(ns.vtk_to_numpy(polydata.GetFieldData().GetArray('TimeValue')))
+print(ns.vtk_to_numpy(polydata.GetFieldData().GetArray("TimeValue")))
 
 writer = vtk.vtkXMLPolyDataWriter()
 # writer.SetArrayName("RGB")

@@ -4,6 +4,7 @@
 """
 Make a symmetric image from two images (hemispheres).
 Utility script for the generate_all_parcellation_and_point_cloud.sh recipe.
+(Not in this repository)
 """
 
 import argparse
@@ -15,13 +16,11 @@ import numpy as np
 
 def _build_arg_parser():
     p = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument('in_file_1',
-                   help='Input file (nifti), one hemisphere.')
-    p.add_argument('in_file_2',
-                   help='Input file (nifti), the other hemisphere.')
-    p.add_argument('out_file',
-                   help='Output file (nifti).')
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
+    )
+    p.add_argument("in_file_1", help="Input file (nifti), one hemisphere.")
+    p.add_argument("in_file_2", help="Input file (nifti), the other hemisphere.")
+    p.add_argument("out_file", help="Output file (nifti).")
     return p
 
 
@@ -31,7 +30,8 @@ def main():
 
     if os.path.isfile(args.out_file) and not args.overwrite:
         raise IOError(
-            '{} already exists, use -f to overwrite.'.format(args.out_file))
+            "{} already exists, use -f to overwrite.".format(args.out_file)
+        )
 
     img_1 = nib.load(args.in_file_1)
     img_2 = nib.load(args.in_file_2)
@@ -60,5 +60,5 @@ def main():
     nib.save(nib.Nifti1Image(result, img_1.affine), args.out_file)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

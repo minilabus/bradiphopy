@@ -10,8 +10,7 @@ from scipy.spatial import KDTree
 from scilpy.tractograms.streamline_operations import resample_streamlines_num_points
 
 
-def filter_from_surface(sft, bdp_obj, mode, criteria, distance,
-                        matched_pts=None):
+def filter_from_surface(sft, bdp_obj, mode, criteria, distance, matched_pts=None):
     """
     Filters streamlines based on their proximity to a given surface object.
 
@@ -68,19 +67,21 @@ def filter_from_surface(sft, bdp_obj, mode, criteria, distance,
     offsets = np.insert(np.cumsum(tmp_len), 0, 0)
 
     for i in range(len(offsets) - 1):
-        curr_distance = dist[offsets[i]:offsets[i+1]]
-        if mode == 'any' and np.any(curr_distance != np.inf):
+        curr_distance = dist[offsets[i] : offsets[i + 1]]
+        if mode == "any" and np.any(curr_distance != np.inf):
             indices.append(i)
-        elif mode == 'all' and np.all(curr_distance != np.inf):
+        elif mode == "all" and np.all(curr_distance != np.inf):
             indices.append(i)
-        elif mode == 'either_end' and (curr_distance[0] != np.inf or
-                                       curr_distance[-1] != np.inf):
+        elif mode == "either_end" and (
+            curr_distance[0] != np.inf or curr_distance[-1] != np.inf
+        ):
             indices.append(i)
-        elif mode == 'both_ends' and (curr_distance[0] != np.inf and
-                                      curr_distance[-1] != np.inf):
+        elif mode == "both_ends" and (
+            curr_distance[0] != np.inf and curr_distance[-1] != np.inf
+        ):
             indices.append(i)
 
-    if criteria == 'exclude':
+    if criteria == "exclude":
         indices = np.setdiff1d(np.arange(len(sft)), indices)
     # If criteria is 'include' (or anything other than 'exclude'),
     # 'indices' already holds the streamlines matching the mode.
@@ -92,15 +93,8 @@ def filter_from_surface(sft, bdp_obj, mode, criteria, distance,
         # The returned matched_pts should reflect all points found so far *plus* current ones.
         # However, the function's current logic for input `matched_pts` is to ignore them
         # for distance calculation (dist[matched_pts] = np.inf).
-        # The return value should reflect the points found in *this specific call*
-        # based on the distances calculated *in this call*.
-        # The problem description asks for "Updated boolean array of points that are close",
-        # which implies points found in this call.
         return indices, current_pass_matched_pts
     else:
-        # If no initial matched_pts, only return current pass results if needed,
-        # but the prompt implies returning it only if matched_pts was an input.
-        # To strictly follow "Returns None if input matched_pts was None":
         return indices, None
 
 
@@ -127,12 +121,8 @@ def get_proximity_scores(sft, bdp_obj, distance=1, endpoints_only=False):
     Returns
     -------
     tuple
-        - float: Surface coverage score, representing the proportion of
-                 surface points that have at least one streamline point
-                 within `distance`.
-        - float: Streamline coverage score, representing the proportion of
-                 streamline points (or endpoints if `endpoints_only` is True)
-                 that have at least one surface point within `distance`.
+        - float: Proportion of surface points with at least one streamline point within `distance`.
+        - float: Proportion of streamline points (or endpoints) with at least one surface point within `distance`.
     """
     if endpoints_only:
         sft = resample_streamlines_num_points(sft, 2)
