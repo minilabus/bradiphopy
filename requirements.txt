@@ -4,7 +4,7 @@ scipy
 matplotlib
 imageio
 nibabel
-scilpy==2.2.*
+scilpy==2.1.*
 dipy
 vtk
 fury
